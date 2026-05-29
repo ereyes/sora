@@ -21,7 +21,7 @@ The repository is organized so each deliverable lives in its own folder, with it
 ```text
 sora/
 ├── README.md
-├── <presentation-file>.pdf
+├── presentation.pdf
 ├── creative_workflow_builder/
 │   └── https://ereyes.github.io/sora/creative_workflow_builder/creative_workflow_builder.html
 ├── prompt_assistant/
@@ -31,6 +31,8 @@ sora/
 ```
 
 ## Live versions
+
+https://ereyes.github.io/sora/presentation.pdf
 
 https://ereyes.github.io/sora/creative_workflow_builder/creative_workflow_builder.html
 
@@ -48,7 +50,7 @@ https://ereyes.github.io/sora/sora-data-files-export/sora-gallery.html
 | Creative Workflow Builder | `creative_workflow_builder/` | `creative_workflow_builder.html` | Prototype HTML experience for building or documenting creative workflows. |
 | Prompt Assistant | `prompt_assistant/` | `prompt_assistant.html` | Prototype HTML assistant for structuring, improving, or reusing Sora prompts. |
 | Sora Data Files Export | `sora-data-files-export/` | `sora-data-files-export.html` | Prototype HTML artifact related to explore our Sora data files. |
-| Presentation | Repository root | `<presentation-file>.pptx` | PDF overview for `creative_workflow_builder` and `prompt_assistant`. |
+| Presentation | Repository root | `presentation.pdf` | PDF overview for `creative_workflow_builder` and `prompt_assistant`. |
 
 ---
 
