@@ -1,0 +1,1329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sora 2 Prompt Assistant</title>
+  <style>
+    :root{
+      --radius: 16px;
+      --radius-sm: 10px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --shadow: 0 18px 55px rgba(0,0,0,.22);
+      --shadow-soft: 0 10px 30px rgba(0,0,0,.12);
+    }
+
+    body[data-theme="dark"]{
+      --bg: #07101f;
+      --bg2: #0e1a30;
+      --panel: rgba(15, 23, 42, .88);
+      --panel-strong: rgba(8, 13, 24, .88);
+      --field: rgba(255,255,255,.065);
+      --field-strong: rgba(255,255,255,.095);
+      --border: rgba(255,255,255,.13);
+      --border-strong: rgba(125, 211, 252, .42);
+      --text: #edf2ff;
+      --muted: #aeb8cf;
+      --faint: #74809a;
+      --accent: #7dd3fc;
+      --accent2: #c084fc;
+      --good: #86efac;
+      --warn: #fbbf24;
+      --danger: #fb7185;
+      --button: #17233f;
+      --button-hover: #233458;
+      --chip: rgba(125, 211, 252, .12);
+      --code: rgba(0,0,0,.28);
+    }
+
+    body[data-theme="light"]{
+      --bg: #f6f8fc;
+      --bg2: #eaf1ff;
+      --panel: rgba(255, 255, 255, .92);
+      --panel-strong: rgba(255, 255, 255, .98);
+      --field: rgba(11, 31, 63, .055);
+      --field-strong: rgba(11, 31, 63, .085);
+      --border: rgba(11, 31, 63, .14);
+      --border-strong: rgba(2, 132, 199, .38);
+      --text: #0f172a;
+      --muted: #526079;
+      --faint: #7b879c;
+      --accent: #0284c7;
+      --accent2: #7c3aed;
+      --good: #15803d;
+      --warn: #b45309;
+      --danger: #be123c;
+      --button: #eef4ff;
+      --button-hover: #dfeaff;
+      --chip: rgba(2, 132, 199, .10);
+      --code: rgba(2, 8, 23, .05);
+    }
+
+    *{box-sizing:border-box}
+    html,body{min-height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 5%, rgba(125,211,252,.18), transparent 28%),
+        radial-gradient(circle at 84% 12%, rgba(192,132,252,.16), transparent 26%),
+        linear-gradient(135deg, var(--bg), var(--bg2));
+      transition: color .2s ease, background .2s ease;
+      overflow:hidden;
+    }
+
+    .topbar{
+      min-height:72px;
+      padding:14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      border-bottom:1px solid var(--border);
+      background: color-mix(in srgb, var(--panel-strong) 88%, transparent);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 260px;
+    }
+    .mark{
+      width:42px;height:42px;border-radius:14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display:grid;place-items:center;color:white;font-weight:900;
+      box-shadow: var(--shadow-soft);
+    }
+    h1{font-size:18px;line-height:1.1;margin:0;font-weight:760;letter-spacing:-.02em}
+    .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
+
+    .top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    button, .buttonLike{
+      appearance:none;
+      border:1px solid var(--border);
+      background:var(--button);
+      color:var(--text);
+      border-radius:999px;
+      padding:9px 12px;
+      font: 650 12px/1 var(--sans);
+      cursor:pointer;
+      transition: transform .08s ease, background .18s ease, border .18s ease, opacity .18s ease;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      white-space:nowrap;
+    }
+    button:hover{background:var(--button-hover);border-color:var(--border-strong)}
+    button:active{transform:translateY(1px)}
+    button.primary{
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
+      color:#fff;border-color:transparent;
+    }
+    button.danger{color:var(--danger)}
+    button.subtle{background:transparent}
+    button.small{padding:7px 9px;font-size:11px}
+    button.square{border-radius:10px;padding:8px 9px}
+    button:disabled{opacity:.45;cursor:not-allowed}
+
+    .app{
+      height:calc(100vh - 72px);
+      display:grid;
+      grid-template-columns: minmax(360px, 46%) minmax(420px, 54%);
+      gap:0;
+    }
+    .pane{
+      height:100%;
+      overflow:auto;
+      padding:18px;
+      scroll-behavior:smooth;
+    }
+    .leftPane{border-right:1px solid var(--border)}
+    .rightPane{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      overflow:hidden;
+      min-height:0;
+    }
+
+    .paneIntro{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+      margin-bottom:14px;
+    }
+    h2{font-size:17px;margin:0 0 5px;font-weight:740;letter-spacing:-.015em}
+    p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .micro{font-size:11px;color:var(--faint);line-height:1.45}
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow-soft);
+      padding:15px;
+      margin-bottom:14px;
+    }
+    .cardHeader{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;
+    }
+    .cardTitle{font-size:14px;font-weight:760;letter-spacing:.01em;margin:0;color:var(--text)}
+    .cardHint{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4}
+    .toggleRow{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;white-space:nowrap}
+    input[type="checkbox"]{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+    label{font-size:12px;font-weight:680;color:var(--muted)}
+    input[type="text"], input[type="url"], textarea, select{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:var(--field);
+      color:var(--text);
+      padding:10px 11px;
+      font: 13px/1.35 var(--sans);
+      outline:none;
+      transition:border .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    textarea{min-height:86px;resize:vertical}
+    input[type="text"]:focus, input[type="url"]:focus, textarea:focus, select:focus{
+      border-color:var(--border-strong);
+      background:var(--field-strong);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+    ::placeholder{color:color-mix(in srgb, var(--faint) 85%, transparent)}
+
+    .inlineActions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
+    .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+    .chip{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:6px 8px;border-radius:999px;
+      background:var(--chip);border:1px solid var(--border);
+      color:var(--muted);font-size:11px;font-weight:650;
+    }
+    .sectionDisabled{opacity:.52;filter:saturate(.75)}
+    .sectionDisabled input:not([type="checkbox"]),
+    .sectionDisabled textarea,
+    .sectionDisabled select,
+    .sectionDisabled .inlineActions button{pointer-events:none}
+
+    .beatRow{
+      display:grid;
+      grid-template-columns: 32px 1fr auto;
+      gap:8px;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .beatNumber{
+      width:32px;height:32px;border-radius:10px;border:1px solid var(--border);
+      display:grid;place-items:center;font-weight:800;color:var(--accent);background:var(--field);
+      font-size:12px;
+    }
+
+    .paletteTools{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-bottom:10px}
+    .palettePreview{
+      width:100%;max-height:170px;object-fit:cover;border-radius:var(--radius-sm);
+      border:1px solid var(--border);background:var(--field);display:none;
+    }
+    .swatches{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:9px;margin-top:10px}
+    .swatch{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:var(--field);
+      overflow:hidden;
+      cursor:pointer;
+      transition:transform .12s ease,border .18s ease;
+      min-width:0;
+    }
+    .swatch:hover{transform:translateY(-1px);border-color:var(--border-strong)}
+    .swatchColor{height:44px;border-bottom:1px solid var(--border)}
+    .swatchMeta{padding:7px;font-family:var(--mono);font-size:11px;color:var(--text);line-height:1.35;word-break:break-word}
+    .swatchMeta span{display:block;color:var(--muted);font-family:var(--sans);font-size:10px;margin-top:2px}
+
+    .stickyPrompt{
+      position:relative;
+      z-index:10;
+      flex:0 0 auto;
+      margin:0;
+    }
+    .currentCard{
+      box-shadow:var(--shadow);
+      border-color:var(--border-strong);
+      background:var(--panel-strong);
+      margin-bottom:0;
+      padding:12px;
+    }
+    .currentCard .cardHeader{margin-bottom:8px}
+    .currentCard .cardHint{font-size:11px;line-height:1.3}
+    .promptTextarea{
+      height:clamp(150px, 24vh, 220px);
+      min-height:140px;
+      max-height:260px;
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.45;
+      background:var(--code);
+      resize:vertical;
+    }
+    .promptMeta{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0 0;
+      color:var(--faint);font-size:11px;flex-wrap:wrap;
+    }
+    .versionToolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .versionsCard{
+      flex:1 1 auto;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      margin-bottom:0;
+      overflow:hidden;
+    }
+    .versionsCard .cardHeader{flex:0 0 auto}
+    .versionsToolbar{flex:0 0 auto}
+    .versionsScroll{
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .versionList{display:flex;flex-direction:column;gap:10px}
+    .versionItem{
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background:var(--panel);
+      padding:12px;
+    }
+    .versionHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .versionTitle{font-weight:760;font-size:13px;color:var(--text)}
+    .versionDate{font-size:11px;color:var(--faint);margin-top:2px}
+    .versionText{
+      max-height:145px;overflow:auto;
+      white-space:pre-wrap;
+      font: 11.5px/1.45 var(--mono);
+      background:var(--code);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      color:color-mix(in srgb, var(--text) 93%, var(--muted));
+    }
+    .emptyState{
+      text-align:center;padding:22px;border:1px dashed var(--border);border-radius:var(--radius);
+      color:var(--muted);background:var(--field);
+    }
+    .toast{
+      position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(16px);
+      opacity:0;pointer-events:none;z-index:200;
+      background:var(--panel-strong);border:1px solid var(--border-strong);color:var(--text);
+      padding:10px 13px;border-radius:999px;font-size:12px;font-weight:700;
+      box-shadow:var(--shadow);transition:opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    .kbd{font-family:var(--mono);font-size:10px;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:2px 5px;background:var(--field);color:var(--muted)}
+    .fileInput{font-size:12px;color:var(--muted)}
+
+    @media (max-width: 980px){
+      body{overflow:auto}
+      .topbar{align-items:flex-start;flex-direction:column}
+      .app{height:auto;display:block}
+      .pane{height:auto;overflow:visible;padding:14px}
+      .rightPane{display:block;overflow:visible}
+      .leftPane{border-right:0;border-bottom:1px solid var(--border)}
+      .stickyPrompt{position:static;margin-bottom:14px}
+      .versionsCard{display:block;min-height:auto}
+      .versionsScroll{overflow:visible;max-height:none;padding-right:0}
+      .promptTextarea{height:300px;min-height:260px;max-height:none}
+      .grid2,.grid3{grid-template-columns:1fr}
+      .swatches{grid-template-columns:repeat(2, minmax(0,1fr))}
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">S2</div>
+      <div>
+        <h1 data-i18n="appTitle">Sora 2 Prompt Assistant</h1>
+        <div class="subtitle" data-i18n="appSubtitle">Structured prompt builder for paste-ready Sora 2 prompts</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="themeBtn" class="square" type="button">🌙 Dark</button>
+      <button id="langBtn" class="square" type="button">FR</button>
+      <button id="loadExampleBtn" class="subtle" type="button" data-i18n="loadExample">Load example</button>
+      <button id="generateTopBtn" class="primary" type="button" data-i18n="generate">Generate prompt</button>
+    </div>
+  </div>
+
+  <main class="app">
+    <section class="pane leftPane" aria-label="Prompt builder controls">
+      <div class="paneIntro">
+        <div>
+          <h2 data-i18n="builderTitle">Builder menus</h2>
+          <p data-i18n="builderSubtitle">Scroll through the required ingredients, keep optional sections on/off, and use suggestions when you want a fast starting point.</p>
+        </div>
+      </div>
+
+      <form id="promptForm" autocomplete="off">
+        <section class="card" id="sceneCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="sceneTitle">1) Scene</div>
+              <div class="cardHint" data-i18n="sceneHint">Define the world, subject, key moment, and atmosphere.</div>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="setting" data-i18n="settingLabel">Setting</label>
+              <input id="setting" type="text" data-placeholder-en="e.g., a rain-soaked neon alley in Tokyo" data-placeholder-fr="ex. une ruelle néon trempée par la pluie à Tokyo" />
+              <div class="inlineActions"><button type="button" class="small" data-suggest="setting">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+            </div>
+            <div class="field">
+              <label for="subject" data-i18n="subjectLabel">Main subject / character</label>
+              <input id="subject" type="text" data-placeholder-en="e.g., an elderly botanist carrying a glass terrarium" data-placeholder-fr="ex. une botaniste âgée portant un terrarium en verre" />
+              <div class="inlineActions"><button type="button" class="small" data-suggest="subject">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="coreAction" data-i18n="coreActionLabel">Core action</label>
+            <input id="coreAction" type="text" data-placeholder-en="e.g., opens the terrarium and releases a swarm of luminous moths" data-placeholder-fr="ex. ouvre le terrarium et libère un essaim de papillons lumineux" />
+            <div class="inlineActions"><button type="button" class="small" data-suggest="coreAction">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="atmosphere" data-i18n="atmosphereLabel">Atmosphere</label>
+              <input id="atmosphere" type="text" data-placeholder-en="e.g., mysterious, humid, intimate" data-placeholder-fr="ex. mystérieuse, humide, intime" />
+              <div class="inlineActions"><button type="button" class="small" data-suggest="atmosphere">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+            </div>
+            <div class="field">
+              <label for="duration" data-i18n="durationLabel">Approx. duration / timing cue</label>
+              <input id="duration" type="text" data-placeholder-en="e.g., 8 seconds, one continuous shot" data-placeholder-fr="ex. 8 secondes, un plan continu" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="sceneDetails" data-i18n="detailsLabel">Additional visual details</label>
+            <textarea id="sceneDetails" data-placeholder-en="Describe important props, textures, weather, background elements, or continuity details." data-placeholder-fr="Décrivez les accessoires, textures, météo, arrière-plan ou détails de continuité importants."></textarea>
+          </div>
+        </section>
+
+        <section class="card" id="subjectCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="subjectSectionTitle">2) Subject details</div>
+              <div class="cardHint" data-i18n="subjectSectionHint">Add identity, wardrobe, behavior, and visual specificity.</div>
+            </div>
+            <label class="toggleRow"><input id="includeSubjectDetails" type="checkbox" checked /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="wardrobe" data-i18n="wardrobeLabel">Wardrobe / materials</label>
+              <input id="wardrobe" type="text" data-placeholder-en="e.g., translucent raincoat, worn leather satchel" data-placeholder-fr="ex. imperméable translucide, sacoche en cuir usé" />
+              <div class="inlineActions"><button type="button" class="small" data-suggest="wardrobe">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+            </div>
+            <div class="field">
+              <label for="behavior" data-i18n="behaviorLabel">Behavior / expression</label>
+              <input id="behavior" type="text" data-placeholder-en="e.g., calm, curious, slightly anxious" data-placeholder-fr="ex. calme, curieuse, légèrement inquiète" />
+              <div class="inlineActions"><button type="button" class="small" data-suggest="behavior">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" id="cinemaCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="cinemaTitle">3) Cinematography</div>
+              <div class="cardHint" data-i18n="cinemaHint">Camera language: shot, lens, movement, and framing.</div>
+            </div>
+            <label class="toggleRow"><input id="includeCinema" type="checkbox" checked /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid3">
+            <div class="field">
+              <label for="shotType" data-i18n="shotTypeLabel">Shot type</label>
+              <select id="shotType"></select>
+            </div>
+            <div class="field">
+              <label for="cameraMovement" data-i18n="cameraMoveLabel">Camera movement</label>
+              <select id="cameraMovement"></select>
+            </div>
+            <div class="field">
+              <label for="lens" data-i18n="lensLabel">Lens / optical feel</label>
+              <select id="lens"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="framingNotes" data-i18n="framingLabel">Framing notes</label>
+            <input id="framingNotes" type="text" data-placeholder-en="e.g., subject centered at first, then revealed in a wide composition" data-placeholder-fr="ex. sujet d’abord centré, puis révélé dans une composition large" />
+            <div class="inlineActions"><button type="button" class="small" data-suggest="framingNotes">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+          </div>
+        </section>
+
+        <section class="card" id="styleCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="styleTitle">4) Style + palette</div>
+              <div class="cardHint" data-i18n="styleHint">Define the visual direction. Extract colors from a reference image and insert hex codes here.</div>
+            </div>
+            <label class="toggleRow"><input id="includeStyle" type="checkbox" checked /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="visualStyle" data-i18n="visualStyleLabel">Visual style</label>
+              <select id="visualStyle"></select>
+            </div>
+            <div class="field">
+              <label for="texture" data-i18n="textureLabel">Medium / texture</label>
+              <input id="texture" type="text" data-placeholder-en="e.g., tactile, grainy, photographic, soft haze" data-placeholder-fr="ex. tactile, granuleux, photographique, légère brume" />
+              <div class="inlineActions"><button type="button" class="small" data-suggest="texture">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="paletteField" data-i18n="paletteFieldLabel">Palette / color notes</label>
+            <input id="paletteField" type="text" data-placeholder-en="e.g., palette: #0F172A, #7DD3FC, #C084FC" data-placeholder-fr="ex. palette : #0F172A, #7DD3FC, #C084FC" />
+            <div class="inlineActions">
+              <button type="button" class="small" data-suggest="paletteField">🎲 <span data-i18n="suggest">Suggest</span></button>
+              <button type="button" class="small" id="clearPaletteField" data-i18n="clearPalette">Clear palette</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="styleNotes" data-i18n="styleNotesLabel">Style notes</label>
+            <textarea id="styleNotes" data-placeholder-en="Add art direction notes, references to materials, avoidance notes, or color relationships." data-placeholder-fr="Ajoutez des notes de direction artistique, matières, éléments à éviter ou relations de couleur."></textarea>
+          </div>
+
+          <div class="card" style="margin:10px 0 0; box-shadow:none; background:var(--field);">
+            <div class="cardHeader">
+              <div>
+                <div class="cardTitle" data-i18n="paletteTitle">Image palette extractor</div>
+                <div class="cardHint" data-i18n="paletteHint">Select a local image or load a URL, then extract the five dominant colors.</div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="imageFile" data-i18n="localImageLabel">Local image</label>
+              <input id="imageFile" class="fileInput" type="file" accept="image/*" />
+            </div>
+            <div class="paletteTools">
+              <div class="field" style="margin:0">
+                <label for="imageUrl" data-i18n="imageUrlLabel">Image URL</label>
+                <input id="imageUrl" type="url" data-placeholder-en="https://example.com/reference.jpg" data-placeholder-fr="https://exemple.com/reference.jpg" />
+              </div>
+              <button id="loadUrlBtn" type="button" data-i18n="loadUrl">Load URL</button>
+            </div>
+            <img id="imagePreview" class="palettePreview" alt="Selected image preview" />
+            <div class="inlineActions" style="margin-top:10px">
+              <button id="extractPaletteBtn" type="button" class="primary" data-i18n="extractPalette">Extract 5 colors</button>
+              <button id="useAllColorsBtn" type="button" data-i18n="useAllColors">Use all in Style</button>
+              <button id="copyColorsBtn" type="button" data-i18n="copyHex">Copy hex codes</button>
+            </div>
+            <div id="paletteStatus" class="micro" style="margin-top:8px"></div>
+            <div id="swatches" class="swatches" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section class="card" id="lightingCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="lightingTitle">5) Lighting</div>
+              <div class="cardHint" data-i18n="lightingHint">Specify light source, contrast, color temperature, and time of day.</div>
+            </div>
+            <label class="toggleRow"><input id="includeLighting" type="checkbox" checked /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid3">
+            <div class="field"><label for="lightingType" data-i18n="lightingTypeLabel">Lighting type</label><select id="lightingType"></select></div>
+            <div class="field"><label for="timeOfDay" data-i18n="timeOfDayLabel">Time of day</label><select id="timeOfDay"></select></div>
+            <div class="field"><label for="contrast" data-i18n="contrastLabel">Contrast</label><select id="contrast"></select></div>
+          </div>
+          <div class="field">
+            <label for="lightingNotes" data-i18n="lightingNotesLabel">Lighting notes</label>
+            <input id="lightingNotes" type="text" data-placeholder-en="e.g., reflections shimmer on wet asphalt, soft rim light around the subject" data-placeholder-fr="ex. reflets sur l’asphalte mouillé, léger contre-jour autour du sujet" />
+            <div class="inlineActions"><button type="button" class="small" data-suggest="lightingNotes">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+          </div>
+        </section>
+
+        <section class="card" id="moodCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="moodTitle">6) Mood + pace</div>
+              <div class="cardHint" data-i18n="moodHint">Give the scene an emotional direction and rhythm.</div>
+            </div>
+            <label class="toggleRow"><input id="includeMood" type="checkbox" checked /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="mood" data-i18n="moodLabel">Mood</label><select id="mood"></select></div>
+            <div class="field"><label for="pace" data-i18n="paceLabel">Pace</label><select id="pace"></select></div>
+          </div>
+          <div class="field">
+            <label for="emotionalArc" data-i18n="arcLabel">Emotional arc</label>
+            <input id="emotionalArc" type="text" data-placeholder-en="e.g., starts tense, resolves into quiet wonder" data-placeholder-fr="ex. commence avec tension, finit dans un émerveillement calme" />
+            <div class="inlineActions"><button type="button" class="small" data-suggest="emotionalArc">🎲 <span data-i18n="suggest">Suggest</span></button></div>
+          </div>
+        </section>
+
+        <section class="card" id="actionsCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="actionsTitle">7) Action beats</div>
+              <div class="cardHint" data-i18n="actionsHint">Break the video into simple, sequential movement beats.</div>
+            </div>
+            <label class="toggleRow"><input id="includeActions" type="checkbox" checked /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div id="beats"></div>
+          <div class="inlineActions">
+            <button id="addBeatBtn" type="button" data-i18n="addBeat">Add beat</button>
+            <button type="button" class="small" data-suggest="beat">🎲 <span data-i18n="suggestBeat">Suggest beat</span></button>
+          </div>
+        </section>
+
+        <section class="card" id="dialogueCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="dialogueTitle">8) Dialogue</div>
+              <div class="cardHint" data-i18n="dialogueHint">Optional. Keep lines short and visually motivated.</div>
+            </div>
+            <label class="toggleRow"><input id="includeDialogue" type="checkbox" /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="dialogueCharacter" data-i18n="dialogueCharacterLabel">Character</label><input id="dialogueCharacter" type="text" data-placeholder-en="e.g., Botanist" data-placeholder-fr="ex. Botaniste" /></div>
+            <div class="field"><label for="dialogueLine" data-i18n="dialogueLineLabel">Line</label><input id="dialogueLine" type="text" data-placeholder-en="e.g., They remember the light." data-placeholder-fr="ex. Elles se souviennent de la lumière." /></div>
+          </div>
+        </section>
+
+        <section class="card" id="soundCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="soundTitle">9) Background sound</div>
+              <div class="cardHint" data-i18n="soundHint">Optional soundscape cues for ambience, music, and effects.</div>
+            </div>
+            <label class="toggleRow"><input id="includeSound" type="checkbox" /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="grid3">
+            <div class="field"><label for="ambience" data-i18n="ambienceLabel">Ambience</label><input id="ambience" type="text" data-placeholder-en="e.g., soft rain and distant traffic" data-placeholder-fr="ex. pluie douce et trafic lointain" /></div>
+            <div class="field"><label for="music" data-i18n="musicLabel">Music</label><input id="music" type="text" data-placeholder-en="e.g., low analog synth pulse" data-placeholder-fr="ex. pulsation synthétique analogique basse" /></div>
+            <div class="field"><label for="sfx" data-i18n="sfxLabel">SFX</label><input id="sfx" type="text" data-placeholder-en="e.g., tiny wing flutter, glass lid opening" data-placeholder-fr="ex. battement d’ailes, couvercle en verre" /></div>
+          </div>
+        </section>
+
+        <section class="card" id="constraintsCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="constraintsTitle">10) Constraints / avoid</div>
+              <div class="cardHint" data-i18n="constraintsHint">Optional production constraints, continuity notes, or things to avoid.</div>
+            </div>
+            <label class="toggleRow"><input id="includeConstraints" type="checkbox" /> <span data-i18n="include">Include</span></label>
+          </div>
+          <div class="field">
+            <label for="avoid" data-i18n="avoidLabel">Avoid / constraints</label>
+            <textarea id="avoid" data-placeholder-en="e.g., no text overlays, no extra characters, keep the same subject throughout" data-placeholder-fr="ex. pas de texte incrusté, pas de personnages supplémentaires, conserver le même sujet tout au long"></textarea>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="workflowTitle">Workflow controls</div>
+              <div class="cardHint" data-i18n="workflowHint">Generate, export settings, or reset the builder.</div>
+            </div>
+          </div>
+          <div class="inlineActions">
+            <button id="generateBtn" class="primary" type="button" data-i18n="generate">Generate prompt</button>
+            <button id="exportCsvBtn" type="button" data-i18n="exportCsv">Export CSV</button>
+            <button id="clearFormBtn" type="button" class="danger" data-i18n="clearForm">Clear form</button>
+          </div>
+          <div class="chips">
+            <span class="chip"><span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> <span data-i18n="shortcutGenerate">generate</span></span>
+            <span class="chip"><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">C</span> <span data-i18n="shortcutCopy">copy</span></span>
+            <span class="chip"><span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">E</span> <span data-i18n="shortcutExport">CSV</span></span>
+          </div>
+        </section>
+      </form>
+    </section>
+
+    <section class="pane rightPane" aria-label="Generated prompt and version history">
+      <div class="stickyPrompt">
+        <section class="card currentCard">
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle" data-i18n="currentPromptTitle">Current prompt</div>
+              <div class="cardHint" data-i18n="currentPromptHint">The generated prompt remains editable. Manual edits are preserved until you generate again or clear it.</div>
+            </div>
+          </div>
+          <textarea id="output" class="promptTextarea" data-placeholder-en="Click “Generate prompt” to create a Sora-ready prompt. You can edit the prompt directly here before copying or saving it." data-placeholder-fr="Cliquez sur « Générer le prompt » pour créer un prompt prêt pour Sora. Vous pouvez le modifier directement ici avant de le copier ou l’enregistrer."></textarea>
+          <div class="promptMeta">
+            <span id="promptStats">0 words · 0 characters</span>
+            <span data-i18n="versioningNote">Generating a new prompt saves the previous prompt into numbered versions below.</span>
+          </div>
+          <div class="versionToolbar">
+            <button id="copyPromptBtn" type="button" data-i18n="copyPrompt">Copy prompt</button>
+            <button id="saveVersionBtn" type="button" data-i18n="saveVersion">Save version</button>
+            <button id="exportCsvRightBtn" type="button" data-i18n="exportCsv">Export CSV</button>
+            <button id="clearPromptBtn" type="button" class="danger" data-i18n="clearPrompt">Clear prompt</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="card versionsCard">
+        <div class="cardHeader">
+          <div>
+            <div class="cardTitle" data-i18n="versionsTitle">Generated versions</div>
+            <div class="cardHint" data-i18n="versionsHint">Numbered prompt versions stay in this page for comparison, loading, copying, and deletion.</div>
+          </div>
+        </div>
+        <div class="inlineActions versionsToolbar" style="margin-bottom:12px">
+          <button id="downloadHistoryBtn" type="button" data-i18n="downloadHistory">Download history (.txt)</button>
+          <button id="clearVersionsBtn" type="button" class="danger" data-i18n="clearVersions">Clear versions</button>
+        </div>
+        <div class="versionsScroll">
+          <div id="versionList" class="versionList"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  const storeKeys = {
+    theme: "soraPromptBuilder.theme.v2",
+    lang: "soraPromptBuilder.lang.v2",
+    versions: "soraPromptBuilder.versions.v2",
+    nextVersion: "soraPromptBuilder.nextVersion.v2"
+  };
+
+  let state = {
+    lang: localStorage.getItem(storeKeys.lang) || "en",
+    theme: localStorage.getItem(storeKeys.theme) || "dark",
+    versions: loadJson(storeKeys.versions, []),
+    nextVersion: Number(localStorage.getItem(storeKeys.nextVersion) || 1),
+    palette: [],
+    paletteImage: null,
+    paletteObjectUrl: null
+  };
+
+  const i18n = {
+    en: {
+      appTitle:"Sora 2 Prompt Assistant", appSubtitle:"Structured prompt builder for paste-ready Sora 2 prompts",
+      builderTitle:"Builder menus", builderSubtitle:"Scroll through the required ingredients, keep optional sections on/off, and use suggestions when you want a fast starting point.",
+      loadExample:"Load example", generate:"Generate prompt", suggest:"Suggest", include:"Include",
+      sceneTitle:"1) Scene", sceneHint:"Define the world, subject, key moment, and atmosphere.", settingLabel:"Setting", subjectLabel:"Main subject / character", coreActionLabel:"Core action", atmosphereLabel:"Atmosphere", durationLabel:"Approx. duration / timing cue", detailsLabel:"Additional visual details",
+      subjectSectionTitle:"2) Subject details", subjectSectionHint:"Add identity, wardrobe, behavior, and visual specificity.", wardrobeLabel:"Wardrobe / materials", behaviorLabel:"Behavior / expression",
+      cinemaTitle:"3) Cinematography", cinemaHint:"Camera language: shot, lens, movement, and framing.", shotTypeLabel:"Shot type", cameraMoveLabel:"Camera movement", lensLabel:"Lens / optical feel", framingLabel:"Framing notes",
+      styleTitle:"4) Style + palette", styleHint:"Define the visual direction. Extract colors from a reference image and insert hex codes here.", visualStyleLabel:"Visual style", textureLabel:"Medium / texture", paletteFieldLabel:"Palette / color notes", clearPalette:"Clear palette", styleNotesLabel:"Style notes",
+      paletteTitle:"Image palette extractor", paletteHint:"Select a local image or load a URL, then extract the five dominant colors.", localImageLabel:"Local image", imageUrlLabel:"Image URL", loadUrl:"Load URL", extractPalette:"Extract 5 colors", useAllColors:"Use all in Style", copyHex:"Copy hex codes",
+      lightingTitle:"5) Lighting", lightingHint:"Specify light source, contrast, color temperature, and time of day.", lightingTypeLabel:"Lighting type", timeOfDayLabel:"Time of day", contrastLabel:"Contrast", lightingNotesLabel:"Lighting notes",
+      moodTitle:"6) Mood + pace", moodHint:"Give the scene an emotional direction and rhythm.", moodLabel:"Mood", paceLabel:"Pace", arcLabel:"Emotional arc",
+      actionsTitle:"7) Action beats", actionsHint:"Break the video into simple, sequential movement beats.", addBeat:"Add beat", suggestBeat:"Suggest beat",
+      dialogueTitle:"8) Dialogue", dialogueHint:"Optional. Keep lines short and visually motivated.", dialogueCharacterLabel:"Character", dialogueLineLabel:"Line",
+      soundTitle:"9) Background sound", soundHint:"Optional soundscape cues for ambience, music, and effects.", ambienceLabel:"Ambience", musicLabel:"Music", sfxLabel:"SFX",
+      constraintsTitle:"10) Constraints / avoid", constraintsHint:"Optional production constraints, continuity notes, or things to avoid.", avoidLabel:"Avoid / constraints",
+      workflowTitle:"Workflow controls", workflowHint:"Generate, export settings, or reset the builder.", exportCsv:"Export CSV", clearForm:"Clear form", shortcutGenerate:"generate", shortcutCopy:"copy", shortcutExport:"CSV",
+      currentPromptTitle:"Current prompt", currentPromptHint:"The generated prompt remains editable. Manual edits are preserved until you generate again or clear it.", versioningNote:"Generating a new prompt saves the previous prompt into numbered versions below.", copyPrompt:"Copy prompt", saveVersion:"Save version", clearPrompt:"Clear prompt",
+      versionsTitle:"Generated versions", versionsHint:"Numbered prompt versions stay in this page for comparison, loading, copying, and deletion.", downloadHistory:"Download history (.txt)", clearVersions:"Clear versions",
+      emptyVersions:"No saved versions yet. Generate a prompt, then generate another or click “Save version”.",
+      load:"Load", copy:"Copy", delete:"Delete", version:"Version", current:"Current", language:"Language", created:"Created",
+      promptLabels: {
+        scene:"Scene", subject:"Subject details", cinema:"Cinematography", style:"Style", lighting:"Lighting", mood:"Mood and pace", actions:"Action beats", dialogue:"Dialogue", sound:"Background sound", constraints:"Constraints / avoid"
+      },
+      toasts: {
+        generated:"Prompt generated", copied:"Copied", csv:"CSV exported", formCleared:"Form cleared", promptCleared:"Prompt cleared", versionSaved:"Version saved", versionLoaded:"Version loaded", versionDeleted:"Version deleted", versionsCleared:"Versions cleared", historyDownloaded:"History downloaded", exampleLoaded:"Example loaded", paletteAdded:"Palette color added to Style", allColorsAdded:"All colors added to Style", colorsCopied:"Hex codes copied", paletteCleared:"Palette cleared", urlLoaded:"Image URL loaded", fileLoaded:"Local image loaded", noPrompt:"No prompt to save", noImage:"Load an image first", noPalette:"Extract a palette first", cors:"Could not read this URL image. The site may block browser canvas access (CORS). Use a local file instead.", paletteReady:"Palette extracted"
+      }
+    },
+    fr: {
+      appTitle:"Assistant de prompts Sora 2", appSubtitle:"Constructeur structuré pour créer des prompts prêts à coller dans Sora 2",
+      builderTitle:"Menus de construction", builderSubtitle:"Parcourez les ingrédients du prompt, activez/désactivez les sections optionnelles et utilisez les suggestions pour démarrer rapidement.",
+      loadExample:"Charger un exemple", generate:"Générer le prompt", suggest:"Suggérer", include:"Inclure",
+      sceneTitle:"1) Scène", sceneHint:"Définir le monde, le sujet, le moment clé et l’atmosphère.", settingLabel:"Lieu / décor", subjectLabel:"Sujet principal / personnage", coreActionLabel:"Action principale", atmosphereLabel:"Atmosphère", durationLabel:"Durée / indication temporelle", detailsLabel:"Détails visuels supplémentaires",
+      subjectSectionTitle:"2) Détails du sujet", subjectSectionHint:"Ajouter identité, tenue, comportement et spécificité visuelle.", wardrobeLabel:"Tenue / matières", behaviorLabel:"Comportement / expression",
+      cinemaTitle:"3) Cinématographie", cinemaHint:"Langage caméra : plan, objectif, mouvement et cadrage.", shotTypeLabel:"Type de plan", cameraMoveLabel:"Mouvement caméra", lensLabel:"Objectif / rendu optique", framingLabel:"Notes de cadrage",
+      styleTitle:"4) Style + palette", styleHint:"Définir la direction visuelle. Extrayez des couleurs depuis une image de référence et insérez les codes hex ici.", visualStyleLabel:"Style visuel", textureLabel:"Médium / texture", paletteFieldLabel:"Palette / notes de couleur", clearPalette:"Effacer la palette", styleNotesLabel:"Notes de style",
+      paletteTitle:"Extracteur de palette d’image", paletteHint:"Sélectionnez une image locale ou chargez une URL, puis extrayez les cinq couleurs dominantes.", localImageLabel:"Image locale", imageUrlLabel:"URL de l’image", loadUrl:"Charger URL", extractPalette:"Extraire 5 couleurs", useAllColors:"Utiliser dans Style", copyHex:"Copier les hex",
+      lightingTitle:"5) Lumière", lightingHint:"Préciser source lumineuse, contraste, température de couleur et moment du jour.", lightingTypeLabel:"Type de lumière", timeOfDayLabel:"Moment du jour", contrastLabel:"Contraste", lightingNotesLabel:"Notes de lumière",
+      moodTitle:"6) Ambiance + rythme", moodHint:"Donner une direction émotionnelle et un rythme à la scène.", moodLabel:"Ambiance", paceLabel:"Rythme", arcLabel:"Arc émotionnel",
+      actionsTitle:"7) Actions séquentielles", actionsHint:"Décomposer la vidéo en mouvements simples et successifs.", addBeat:"Ajouter une action", suggestBeat:"Suggérer une action",
+      dialogueTitle:"8) Dialogue", dialogueHint:"Optionnel. Garder des phrases courtes et motivées visuellement.", dialogueCharacterLabel:"Personnage", dialogueLineLabel:"Réplique",
+      soundTitle:"9) Son d’arrière-plan", soundHint:"Indices de paysage sonore : ambiance, musique et effets.", ambienceLabel:"Ambiance", musicLabel:"Musique", sfxLabel:"Effets sonores",
+      constraintsTitle:"10) Contraintes / éviter", constraintsHint:"Contraintes de production, continuité ou éléments à éviter.", avoidLabel:"Éviter / contraintes",
+      workflowTitle:"Commandes de workflow", workflowHint:"Générer, exporter les réglages ou réinitialiser le constructeur.", exportCsv:"Exporter CSV", clearForm:"Effacer le formulaire", shortcutGenerate:"générer", shortcutCopy:"copier", shortcutExport:"CSV",
+      currentPromptTitle:"Prompt actuel", currentPromptHint:"Le prompt généré reste modifiable. Les modifications manuelles sont conservées jusqu’à une nouvelle génération ou effacement.", versioningNote:"Générer un nouveau prompt sauvegarde le prompt précédent dans les versions numérotées ci-dessous.", copyPrompt:"Copier le prompt", saveVersion:"Sauvegarder version", clearPrompt:"Effacer prompt",
+      versionsTitle:"Versions générées", versionsHint:"Les versions numérotées restent dans la page pour comparer, charger, copier et supprimer.", downloadHistory:"Télécharger l’historique (.txt)", clearVersions:"Effacer versions",
+      emptyVersions:"Aucune version sauvegardée. Générez un prompt, puis générez-en un autre ou cliquez sur « Sauvegarder version ».",
+      load:"Charger", copy:"Copier", delete:"Supprimer", version:"Version", current:"Actuel", language:"Langue", created:"Créé",
+      promptLabels: {
+        scene:"Scène", subject:"Détails du sujet", cinema:"Cinématographie", style:"Style", lighting:"Lumière", mood:"Ambiance et rythme", actions:"Actions séquentielles", dialogue:"Dialogue", sound:"Son d’arrière-plan", constraints:"Contraintes / éviter"
+      },
+      toasts: {
+        generated:"Prompt généré", copied:"Copié", csv:"CSV exporté", formCleared:"Formulaire effacé", promptCleared:"Prompt effacé", versionSaved:"Version sauvegardée", versionLoaded:"Version chargée", versionDeleted:"Version supprimée", versionsCleared:"Versions effacées", historyDownloaded:"Historique téléchargé", exampleLoaded:"Exemple chargé", paletteAdded:"Couleur ajoutée au Style", allColorsAdded:"Toutes les couleurs ajoutées au Style", colorsCopied:"Codes hex copiés", paletteCleared:"Palette effacée", urlLoaded:"Image URL chargée", fileLoaded:"Image locale chargée", noPrompt:"Aucun prompt à sauvegarder", noImage:"Chargez d’abord une image", noPalette:"Extrayez d’abord une palette", cors:"Impossible de lire cette image URL. Le site bloque peut-être l’accès canvas (CORS). Utilisez une image locale.", paletteReady:"Palette extraite"
+      }
+    }
+  };
+
+  const options = {
+    en: {
+      shotType:["Wide establishing shot","Medium shot","Close-up","Extreme close-up","Over-the-shoulder","Low-angle shot","High-angle shot","Macro detail shot"],
+      cameraMovement:["Static camera","Slow dolly-in","Slow dolly-out","Handheld drift","Crane down","Tracking shot","Orbiting movement","Slow pan left-to-right"],
+      lens:["35mm natural perspective","50mm cinematic portrait feel","Wide-angle spatial distortion","Long lens compression","Macro lens detail","Anamorphic cinematic feel","Soft vintage lens","Clean modern lens"],
+      visualStyle:["Cinematic realism","Dreamlike surrealism","Editorial fashion film","Retro-futurist design","Documentary realism","Analog film look","Minimalist art direction","Speculative science-fiction"],
+      lightingType:["Soft diffused light","Hard directional light","Neon practicals","Golden rim light","Moonlit ambience","Volumetric shafts","Overcast natural light","Candlelit practical light"],
+      timeOfDay:["Dawn","Morning","Midday","Late afternoon","Golden hour","Blue hour","Night","Interior timeless light"],
+      contrast:["Low contrast","Natural contrast","High contrast","Silhouette contrast","Soft pastel contrast","Deep chiaroscuro"],
+      mood:["Quiet wonder","Tension","Melancholy","Playful curiosity","Sacred / ritual","Intimate calm","Uneasy suspense","Euphoric discovery"],
+      pace:["Very slow","Slow and deliberate","Natural pace","Rhythmic","Fast escalation","One continuous gesture"]
+    },
+    fr: {
+      shotType:["Plan large d’exposition","Plan moyen","Gros plan","Très gros plan","Plan par-dessus l’épaule","Contre-plongée","Plongée","Plan macro de détail"],
+      cameraMovement:["Caméra fixe","Lent travelling avant","Lent travelling arrière","Flottement caméra portée","Grue descendante","Plan de suivi","Mouvement orbital","Lent panoramique gauche-droite"],
+      lens:["35 mm perspective naturelle","50 mm portrait cinématographique","Grand angle avec distorsion spatiale","Longue focale compressée","Objectif macro détail","Rendu anamorphique","Objectif vintage doux","Objectif moderne propre"],
+      visualStyle:["Réalisme cinématographique","Surréalisme onirique","Film de mode éditorial","Design rétro-futuriste","Réalisme documentaire","Aspect film analogique","Direction artistique minimaliste","Science-fiction spéculative"],
+      lightingType:["Lumière douce diffuse","Lumière dure directionnelle","Néons pratiques","Contre-jour doré","Ambiance lunaire","Rayons volumétriques","Lumière naturelle couverte","Lumière pratique à la bougie"],
+      timeOfDay:["Aube","Matin","Midi","Fin d’après-midi","Heure dorée","Heure bleue","Nuit","Lumière intérieure intemporelle"],
+      contrast:["Faible contraste","Contraste naturel","Fort contraste","Contraste en silhouette","Contraste pastel doux","Clair-obscur profond"],
+      mood:["Émerveillement calme","Tension","Mélancolie","Curiosité ludique","Sacré / rituel","Calme intime","Suspense inquiet","Découverte euphorique"],
+      pace:["Très lent","Lent et délibéré","Rythme naturel","Rythmique","Escalade rapide","Un geste continu"]
+    }
+  };
+
+  const suggestions = {
+    en: {
+      setting:["a rain-soaked neon alley behind a closed cinema","an abandoned observatory above a desert city","a quiet museum gallery at midnight","a greenhouse on the roof of a high-rise","a coastal research station during a storm","a sunlit apartment filled with suspended dust"],
+      subject:["an elderly botanist carrying a glass terrarium","a child in an oversized silver raincoat","a ceramic robot with a cracked porcelain face","a dancer wearing mirrors sewn into the costume","a diver walking through shallow water indoors","a tired archivist holding a glowing cassette tape"],
+      coreAction:["opens a small container and releases luminous insects","discovers that the floor reflects an impossible sky","slowly follows a floating ribbon of light","places a hand on a window as the city changes outside","assembles fragments of paper that begin to move","turns toward the camera as the room fills with mist"],
+      atmosphere:["mysterious, humid, intimate","quiet, ceremonial, and slightly uncanny","nostalgic but futuristic","gentle, suspended, and dreamlike","tense, precise, and controlled","warm, tactile, and human"],
+      wardrobe:["translucent raincoat, worn leather satchel, brass clasps","matte black coat, white gloves, silver thread details","faded work jacket, practical boots, reflective safety strips","soft linen layers, ceramic buttons, pale scarf","tailored graphite suit with luminous seams","handmade costume with mirrored embroidery"],
+      behavior:["calm but visibly curious","careful, deliberate, and protective","slightly anxious, breathing slowly","focused as if performing a ritual","playful, surprised, and alert","still at first, then emotionally moved"],
+      framingNotes:["begin centered, then reveal the environment in a wider composition","keep the subject in the lower third with negative space above","frame through glass so reflections layer over the action","foreground objects briefly obscure the subject as the camera moves","start on a macro detail, then pull back to reveal the full scene"],
+      texture:["grainy 35mm texture, soft halation, tactile surfaces","clean digital image with subtle film grain","soft haze, glass reflections, wet surfaces","paper fibers, ceramic texture, muted metallic details","high-detail photographic realism with gentle diffusion"],
+      paletteField:["palette: #0F172A, #7DD3FC, #C084FC","palette: warm ivory, burnt orange, deep slate blue","palette: moss green, pale gold, blackened teal","palette: smoky violet, cool silver, midnight blue","palette: sand beige, oxidized copper, storm gray"],
+      lightingNotes:["reflections shimmer on wet asphalt, with a soft rim light around the subject","the key light comes from a practical object held by the subject","volumetric beams reveal dust moving through the air","background lights bloom gently with analog halation","a cool window light mixes with warm practical lamps"],
+      emotionalArc:["starts tense, resolves into quiet wonder","moves from hesitation to discovery","begins playful, becomes uncanny","starts as isolation, ends as connection","shifts from realism into a dreamlike reveal"],
+      beat:["The subject pauses, notices a faint glow, and steps closer.","The camera moves in as the subject lifts the object into the light.","A small environmental change reveals that something impossible is happening.","The subject reacts subtly, then completes one decisive gesture.","The final frame holds for a beat as the sound fades." ]
+    },
+    fr: {
+      setting:["une ruelle néon trempée par la pluie derrière un cinéma fermé","un observatoire abandonné au-dessus d’une ville désertique","une galerie de musée silencieuse à minuit","une serre sur le toit d’une tour","une station de recherche côtière pendant une tempête","un appartement ensoleillé rempli de poussière suspendue"],
+      subject:["une botaniste âgée portant un terrarium en verre","un enfant dans un imperméable argenté trop grand","un robot en céramique au visage de porcelaine fissuré","une danseuse avec des miroirs cousus au costume","un plongeur marchant dans une eau peu profonde à l’intérieur","une archiviste fatiguée tenant une cassette lumineuse"],
+      coreAction:["ouvre un petit contenant et libère des insectes lumineux","découvre que le sol reflète un ciel impossible","suit lentement un ruban de lumière flottant","pose la main sur une fenêtre tandis que la ville change dehors","assemble des fragments de papier qui commencent à bouger","se tourne vers la caméra alors que la pièce se remplit de brume"],
+      atmosphere:["mystérieuse, humide, intime","calme, cérémonielle et légèrement étrange","nostalgique mais futuriste","douce, suspendue et onirique","tendue, précise et contrôlée","chaleureuse, tactile et humaine"],
+      wardrobe:["imperméable translucide, sacoche de cuir usé, fermoirs en laiton","manteau noir mat, gants blancs, détails en fil argenté","veste de travail délavée, bottes pratiques, bandes réfléchissantes","couches de lin doux, boutons en céramique, foulard pâle","costume graphite ajusté avec coutures lumineuses","costume fait main avec broderie miroir"],
+      behavior:["calme mais visiblement curieuse","précise, délibérée et protectrice","légèrement anxieuse, respiration lente","concentrée comme dans un rituel","ludique, surprise et attentive","immobile d’abord, puis émue"],
+      framingNotes:["commencer centré, puis révéler l’environnement en composition large","placer le sujet dans le tiers inférieur avec un espace négatif au-dessus","cadrer à travers du verre pour superposer les reflets à l’action","des objets au premier plan masquent brièvement le sujet pendant le mouvement","commencer sur un détail macro, puis reculer pour révéler la scène"],
+      texture:["grain 35 mm, halation douce, surfaces tactiles","image numérique propre avec un léger grain film","brume douce, reflets de verre, surfaces mouillées","fibres de papier, texture céramique, détails métalliques sourds","réalisme photographique détaillé avec diffusion douce"],
+      paletteField:["palette : #0F172A, #7DD3FC, #C084FC","palette : ivoire chaud, orange brûlé, bleu ardoise profond","palette : vert mousse, or pâle, sarcelle noircie","palette : violet fumé, argent froid, bleu nuit","palette : beige sable, cuivre oxydé, gris tempête"],
+      lightingNotes:["les reflets tremblent sur l’asphalte mouillé, avec un léger contre-jour autour du sujet","la lumière principale vient d’un objet pratique tenu par le sujet","des rayons volumétriques révèlent la poussière dans l’air","les lumières d’arrière-plan fleurissent avec une halation analogique","une lumière froide de fenêtre se mélange aux lampes chaudes"],
+      emotionalArc:["commence avec tension, finit dans un émerveillement calme","passe de l’hésitation à la découverte","commence de manière ludique, devient étrange","part de l’isolement, finit par une connexion","glisse du réalisme vers une révélation onirique"],
+      beat:["Le sujet s’arrête, remarque une lueur faible et s’approche.","La caméra avance lorsque le sujet lève l’objet vers la lumière.","Un changement dans l’environnement révèle que quelque chose d’impossible arrive.","Le sujet réagit subtilement, puis accomplit un geste décisif.","Le dernier cadre reste suspendu un instant pendant que le son s’efface."]
+    }
+  };
+
+  function loadJson(key, fallback){
+    try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+    catch(e){ return fallback; }
+  }
+  function saveState(){
+    localStorage.setItem(storeKeys.lang, state.lang);
+    localStorage.setItem(storeKeys.theme, state.theme);
+    localStorage.setItem(storeKeys.versions, JSON.stringify(state.versions));
+    localStorage.setItem(storeKeys.nextVersion, String(state.nextVersion));
+  }
+  function T(key){ return i18n[state.lang][key] || i18n.en[key] || key; }
+  function toast(keyOrText){
+    const text = (i18n[state.lang].toasts && i18n[state.lang].toasts[keyOrText]) || keyOrText;
+    const el = $("toast");
+    el.textContent = text;
+    el.classList.add("show");
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(()=>el.classList.remove("show"), 1800);
+  }
+
+  function populateSelect(id, values){
+    const el = $(id);
+    el.innerHTML = "";
+    values.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v; opt.textContent = v;
+      el.appendChild(opt);
+    });
+  }
+  function populateOptions(){
+    const o = options[state.lang];
+    populateSelect("shotType", o.shotType);
+    populateSelect("cameraMovement", o.cameraMovement);
+    populateSelect("lens", o.lens);
+    populateSelect("visualStyle", o.visualStyle);
+    populateSelect("lightingType", o.lightingType);
+    populateSelect("timeOfDay", o.timeOfDay);
+    populateSelect("contrast", o.contrast);
+    populateSelect("mood", o.mood);
+    populateSelect("pace", o.pace);
+  }
+
+  function applyLanguage(){
+    document.documentElement.lang = state.lang;
+    $$("[data-i18n]").forEach(el => { el.textContent = T(el.dataset.i18n); });
+    $$('input[data-placeholder-en], textarea[data-placeholder-en]').forEach(el => {
+      el.placeholder = el.dataset[`placeholder${state.lang === "fr" ? "Fr" : "En"}`] || el.dataset.placeholderEn || "";
+    });
+    $("langBtn").textContent = state.lang === "en" ? "FR" : "EN";
+    const current = collectSettings();
+    populateOptions();
+    restoreCompatibleSelects(current);
+    renderVersions();
+    updateStats();
+  }
+
+  function restoreCompatibleSelects(settings){
+    ["shotType","cameraMovement","lens","visualStyle","lightingType","timeOfDay","contrast","mood","pace"].forEach(id => {
+      if(settings[id]) $(id).value = settings[id];
+    });
+  }
+
+  function applyTheme(){
+    document.body.dataset.theme = state.theme;
+    $("themeBtn").textContent = state.theme === "dark" ? "🌙 Dark" : "☀️ Light";
+  }
+
+  function randomFrom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+  function setSuggested(field){
+    const bank = suggestions[state.lang][field];
+    if(!bank) return;
+    if(field === "beat"){
+      addBeat(randomFrom(bank));
+      return;
+    }
+    const el = $(field);
+    if(el) el.value = randomFrom(bank);
+  }
+
+  function addBeat(value=""){
+    const wrap = $("beats");
+    const row = document.createElement("div");
+    row.className = "beatRow";
+    row.innerHTML = `
+      <div class="beatNumber"></div>
+      <input type="text" class="beatInput" value="${escapeHtml(value)}" />
+      <button type="button" class="small danger removeBeat" aria-label="Remove beat">×</button>
+    `;
+    wrap.appendChild(row);
+    renumberBeats();
+  }
+  function renumberBeats(){
+    $$(".beatRow").forEach((row, idx)=>{
+      row.querySelector(".beatNumber").textContent = idx + 1;
+      const input = row.querySelector(".beatInput");
+      input.placeholder = state.lang === "fr" ? `Action ${idx+1}` : `Beat ${idx+1}`;
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str || "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch]));
+  }
+  function val(id){ return ($(id).value || "").trim(); }
+  function checked(id){ return $(id).checked; }
+
+  function collectSettings(){
+    const fields = ["setting","subject","coreAction","atmosphere","duration","sceneDetails","wardrobe","behavior","shotType","cameraMovement","lens","framingNotes","visualStyle","texture","paletteField","styleNotes","lightingType","timeOfDay","contrast","lightingNotes","mood","pace","emotionalArc","dialogueCharacter","dialogueLine","ambience","music","sfx","avoid"];
+    const settings = { lang: state.lang, theme: state.theme };
+    fields.forEach(id => settings[id] = $(id) ? val(id) : "");
+    settings.includeSubjectDetails = checked("includeSubjectDetails");
+    settings.includeCinema = checked("includeCinema");
+    settings.includeStyle = checked("includeStyle");
+    settings.includeLighting = checked("includeLighting");
+    settings.includeMood = checked("includeMood");
+    settings.includeActions = checked("includeActions");
+    settings.includeDialogue = checked("includeDialogue");
+    settings.includeSound = checked("includeSound");
+    settings.includeConstraints = checked("includeConstraints");
+    settings.beats = $$(".beatInput").map(i => i.value.trim()).filter(Boolean);
+    settings.extractedPalette = state.palette.map(c => c.hex).join(", ");
+    settings.currentPrompt = val("output");
+    return settings;
+  }
+
+  function line(label, value){ return value ? `- ${label}: ${value}` : ""; }
+  function buildPrompt(){
+    const s = collectSettings();
+    const labels = i18n[state.lang].promptLabels;
+    const out = [];
+
+    if(state.lang === "fr"){
+      out.push(`${labels.scene} :`);
+      out.push([s.setting ? `Décor : ${s.setting}.` : "", s.subject ? `Sujet principal : ${s.subject}.` : "", s.coreAction ? `Action centrale : ${s.coreAction}.` : "", s.atmosphere ? `Atmosphère : ${s.atmosphere}.` : "", s.duration ? `Durée / temporalité : ${s.duration}.` : ""].filter(Boolean).join("\n"));
+      if(s.sceneDetails) out.push(`Détails visuels : ${s.sceneDetails}`);
+      if(s.includeSubjectDetails && (s.wardrobe || s.behavior)) out.push(`\n${labels.subject} :\n${[line("Tenue / matières", s.wardrobe), line("Comportement / expression", s.behavior)].filter(Boolean).join("\n")}`);
+      if(s.includeCinema) out.push(`\n${labels.cinema} :\n${[line("Type de plan", s.shotType), line("Mouvement caméra", s.cameraMovement), line("Objectif / rendu", s.lens), line("Cadrage", s.framingNotes)].filter(Boolean).join("\n")}`);
+      if(s.includeStyle) out.push(`\n${labels.style} :\n${[line("Style visuel", s.visualStyle), line("Médium / texture", s.texture), line("Palette / couleurs", s.paletteField), line("Notes", s.styleNotes)].filter(Boolean).join("\n")}`);
+      if(s.includeLighting) out.push(`\n${labels.lighting} :\n${[line("Type de lumière", s.lightingType), line("Moment du jour", s.timeOfDay), line("Contraste", s.contrast), line("Notes", s.lightingNotes)].filter(Boolean).join("\n")}`);
+      if(s.includeMood) out.push(`\n${labels.mood} :\n${[line("Ambiance", s.mood), line("Rythme", s.pace), line("Arc émotionnel", s.emotionalArc)].filter(Boolean).join("\n")}`);
+      if(s.includeActions && s.beats.length) out.push(`\n${labels.actions} :\n${s.beats.map((b,i)=>`${i+1}. ${b}`).join("\n")}`);
+      if(s.includeDialogue && (s.dialogueCharacter || s.dialogueLine)) out.push(`\n${labels.dialogue} :\n- ${s.dialogueCharacter || "Personnage"}: "${s.dialogueLine || "..."}"`);
+      if(s.includeSound) out.push(`\n${labels.sound} :\n${[line("Ambiance", s.ambience), line("Musique", s.music), line("Effets", s.sfx)].filter(Boolean).join("\n")}`);
+      if(s.includeConstraints && s.avoid) out.push(`\n${labels.constraints} :\n- ${s.avoid}`);
+    } else {
+      out.push(`${labels.scene}:`);
+      out.push([s.setting ? `Setting: ${s.setting}.` : "", s.subject ? `Main subject: ${s.subject}.` : "", s.coreAction ? `Core action: ${s.coreAction}.` : "", s.atmosphere ? `Atmosphere: ${s.atmosphere}.` : "", s.duration ? `Duration / timing: ${s.duration}.` : ""].filter(Boolean).join("\n"));
+      if(s.sceneDetails) out.push(`Visual details: ${s.sceneDetails}`);
+      if(s.includeSubjectDetails && (s.wardrobe || s.behavior)) out.push(`\n${labels.subject}:\n${[line("Wardrobe / materials", s.wardrobe), line("Behavior / expression", s.behavior)].filter(Boolean).join("\n")}`);
+      if(s.includeCinema) out.push(`\n${labels.cinema}:\n${[line("Shot type", s.shotType), line("Camera movement", s.cameraMovement), line("Lens / optical feel", s.lens), line("Framing", s.framingNotes)].filter(Boolean).join("\n")}`);
+      if(s.includeStyle) out.push(`\n${labels.style}:\n${[line("Visual style", s.visualStyle), line("Medium / texture", s.texture), line("Palette / color notes", s.paletteField), line("Notes", s.styleNotes)].filter(Boolean).join("\n")}`);
+      if(s.includeLighting) out.push(`\n${labels.lighting}:\n${[line("Lighting type", s.lightingType), line("Time of day", s.timeOfDay), line("Contrast", s.contrast), line("Notes", s.lightingNotes)].filter(Boolean).join("\n")}`);
+      if(s.includeMood) out.push(`\n${labels.mood}:\n${[line("Mood", s.mood), line("Pace", s.pace), line("Emotional arc", s.emotionalArc)].filter(Boolean).join("\n")}`);
+      if(s.includeActions && s.beats.length) out.push(`\n${labels.actions}:\n${s.beats.map((b,i)=>`${i+1}. ${b}`).join("\n")}`);
+      if(s.includeDialogue && (s.dialogueCharacter || s.dialogueLine)) out.push(`\n${labels.dialogue}:\n- ${s.dialogueCharacter || "Character"}: "${s.dialogueLine || "..."}"`);
+      if(s.includeSound) out.push(`\n${labels.sound}:\n${[line("Ambience", s.ambience), line("Music", s.music), line("SFX", s.sfx)].filter(Boolean).join("\n")}`);
+      if(s.includeConstraints && s.avoid) out.push(`\n${labels.constraints}:\n- ${s.avoid}`);
+    }
+
+    return out.filter(Boolean).join("\n").replace(/\n{3,}/g,"\n\n").trim();
+  }
+
+  function generatePrompt(){
+    if(val("output")) saveCurrentVersion(false);
+    const prompt = buildPrompt();
+    $("output").value = prompt;
+    updateStats();
+    toast("generated");
+  }
+
+  function updateStats(){
+    const text = val("output");
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    $("promptStats").textContent = `${words} ${words === 1 ? "word" : "words"} · ${text.length} characters`;
+  }
+
+  async function copyText(text){
+    if(!text) return;
+    try { await navigator.clipboard.writeText(text); }
+    catch(e){
+      const tmp = document.createElement("textarea");
+      tmp.value = text; document.body.appendChild(tmp); tmp.select(); document.execCommand("copy"); tmp.remove();
+    }
+    toast("copied");
+  }
+
+  function saveCurrentVersion(showToast=true){
+    const text = val("output");
+    if(!text){ if(showToast) toast("noPrompt"); return false; }
+    const settings = collectSettings();
+    const last = state.versions[0];
+    if(last && last.text === text && showToast){ toast("versionSaved"); return true; }
+    const version = {
+      id: Date.now() + "-" + Math.random().toString(16).slice(2),
+      number: state.nextVersion++,
+      text,
+      lang: state.lang,
+      createdAt: new Date().toISOString(),
+      settings
+    };
+    state.versions.unshift(version);
+    saveState();
+    renderVersions();
+    if(showToast) toast("versionSaved");
+    return true;
+  }
+
+  function renderVersions(){
+    const list = $("versionList");
+    list.innerHTML = "";
+    if(!state.versions.length){
+      const empty = document.createElement("div");
+      empty.className = "emptyState";
+      empty.textContent = T("emptyVersions");
+      list.appendChild(empty);
+      return;
+    }
+    state.versions.forEach(v => {
+      const item = document.createElement("article");
+      item.className = "versionItem";
+      const dt = new Date(v.createdAt);
+      item.innerHTML = `
+        <div class="versionHeader">
+          <div>
+            <div class="versionTitle">${T("version")} ${v.number}</div>
+            <div class="versionDate">${dt.toLocaleString()} · ${v.lang.toUpperCase()}</div>
+          </div>
+          <div class="inlineActions" style="margin:0; justify-content:flex-end">
+            <button type="button" class="small" data-version-load="${v.id}">${T("load")}</button>
+            <button type="button" class="small" data-version-copy="${v.id}">${T("copy")}</button>
+            <button type="button" class="small danger" data-version-delete="${v.id}">${T("delete")}</button>
+          </div>
+        </div>
+        <div class="versionText">${escapeHtml(v.text)}</div>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function deleteVersion(id){
+    state.versions = state.versions.filter(v => v.id !== id);
+    saveState(); renderVersions(); toast("versionDeleted");
+  }
+  function loadVersion(id){
+    const v = state.versions.find(v => v.id === id);
+    if(!v) return;
+    $("output").value = v.text;
+    updateStats(); toast("versionLoaded");
+  }
+
+  function csvEscape(value){
+    const s = String(value ?? "");
+    return `"${s.replace(/"/g,'""')}"`;
+  }
+  function exportCsv(){
+    if(!val("output")) $("output").value = buildPrompt();
+    const settings = collectSettings();
+    const rows = [["field","value"]];
+    Object.entries(settings).forEach(([k,v]) => {
+      rows.push([k, Array.isArray(v) ? v.join(" | ") : v]);
+    });
+    rows.push(["versions_count", state.versions.length]);
+    const csv = rows.map(r => r.map(csvEscape).join(",")).join("\n");
+    downloadText(csv, `sora2_prompt_settings_${dateStamp()}.csv`, "text/csv;charset=utf-8");
+    toast("csv");
+  }
+  function downloadHistory(){
+    const current = val("output");
+    const parts = [];
+    if(current) parts.push(`# ${T("current")}\n\n${current}`);
+    state.versions.forEach(v => {
+      parts.push(`# ${T("version")} ${v.number} — ${new Date(v.createdAt).toLocaleString()}\n\n${v.text}`);
+    });
+    downloadText(parts.join("\n\n---\n\n") || T("emptyVersions"), `sora2_prompt_history_${dateStamp()}.txt`, "text/plain;charset=utf-8");
+    toast("historyDownloaded");
+  }
+  function downloadText(text, filename, mime){
+    const blob = new Blob([text], {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 400);
+  }
+  function dateStamp(){ return new Date().toISOString().slice(0,19).replace(/[:T]/g,"-"); }
+
+  function clearForm(){
+    $$('input[type="text"], input[type="url"], textarea:not(#output)').forEach(el => el.value = "");
+    $("includeSubjectDetails").checked = true;
+    $("includeCinema").checked = true;
+    $("includeStyle").checked = true;
+    $("includeLighting").checked = true;
+    $("includeMood").checked = true;
+    $("includeActions").checked = true;
+    $("includeDialogue").checked = false;
+    $("includeSound").checked = false;
+    $("includeConstraints").checked = false;
+    $("beats").innerHTML = ""; addBeat(); addBeat(); addBeat();
+    state.palette = []; renderPalette(); updateSectionStates();
+    toast("formCleared");
+  }
+
+  function loadExample(){
+    const ex = state.lang === "fr" ? {
+      setting:"une serre sur le toit d’une tour pendant l’heure bleue",
+      subject:"une botaniste âgée portant un terrarium en verre",
+      coreAction:"ouvre le terrarium et libère des papillons lumineux qui dessinent une constellation",
+      atmosphere:"mystérieuse, douce, humide et intime",
+      duration:"10 secondes, un plan continu",
+      sceneDetails:"Des gouttes d’eau sur le verre reflètent les lumières de la ville. Des plantes tropicales bougent légèrement dans le vent.",
+      wardrobe:"imperméable translucide, sacoche en cuir usé, gants blancs",
+      behavior:"calme mais visiblement émue",
+      framingNotes:"commencer sur un détail macro du terrarium, puis reculer pour révéler la ville",
+      texture:"grain 35 mm, halation douce, surfaces mouillées et tactiles",
+      paletteField:"palette : #102A43, #7DD3FC, #F8E7B9, #7A4E2D",
+      styleNotes:"Direction artistique réaliste avec un léger basculement vers le merveilleux.",
+      lightingNotes:"lumière froide de l’heure bleue mélangée à une lueur chaude venant du terrarium",
+      emotionalArc:"commence dans la retenue, finit dans l’émerveillement calme",
+      beats:["La botaniste pose le terrarium sur une table métallique humide.","Elle ouvre lentement le couvercle en verre.","Les papillons lumineux s’élèvent et dessinent une constellation au-dessus des plantes.","La caméra recule pour révéler la ville qui scintille derrière elle."],
+      ambience:"pluie douce, vent léger, trafic lointain", music:"nappe synthétique basse et chaleureuse", sfx:"couvercle en verre, battements d’ailes très légers"
+    } : {
+      setting:"a rooftop greenhouse during blue hour above a dense city",
+      subject:"an elderly botanist carrying a glass terrarium",
+      coreAction:"opens the terrarium and releases luminous moths that form a constellation",
+      atmosphere:"mysterious, gentle, humid, and intimate",
+      duration:"10 seconds, one continuous shot",
+      sceneDetails:"Water drops on the glass catch city reflections. Tropical plants move slightly in the wind.",
+      wardrobe:"translucent raincoat, worn leather satchel, white gloves",
+      behavior:"calm but visibly moved",
+      framingNotes:"start on a macro detail of the terrarium, then pull back to reveal the city",
+      texture:"grainy 35mm texture, soft halation, wet tactile surfaces",
+      paletteField:"palette: #102A43, #7DD3FC, #F8E7B9, #7A4E2D",
+      styleNotes:"Realistic art direction with a subtle shift into wonder.",
+      lightingNotes:"cool blue-hour light mixed with warm glow coming from the terrarium",
+      emotionalArc:"starts restrained, resolves into quiet wonder",
+      beats:["The botanist places the terrarium on a wet metal table.","She slowly opens the glass lid.","Luminous moths rise and form a constellation above the plants.","The camera pulls back to reveal the city sparkling behind her."],
+      ambience:"soft rain, light wind, distant traffic", music:"low warm synth bed", sfx:"glass lid opening, tiny wing flutter"
+    };
+    Object.entries(ex).forEach(([k,v]) => {
+      if(k === "beats") return;
+      if($(k)) $(k).value = v;
+    });
+    $("includeSound").checked = true;
+    $("beats").innerHTML = "";
+    ex.beats.forEach(addBeat);
+    updateSectionStates(); toast("exampleLoaded");
+  }
+
+  function updateSectionStates(){
+    const pairs = [
+      ["includeSubjectDetails","subjectCard"],["includeCinema","cinemaCard"],["includeStyle","styleCard"],["includeLighting","lightingCard"],["includeMood","moodCard"],["includeActions","actionsCard"],["includeDialogue","dialogueCard"],["includeSound","soundCard"],["includeConstraints","constraintsCard"]
+    ];
+    pairs.forEach(([checkId, cardId]) => {
+      const card = $(cardId);
+      if(card) card.classList.toggle("sectionDisabled", !checked(checkId));
+    });
+  }
+
+  function setPaletteImage(img, sourceLabel){
+    state.paletteImage = img;
+    const preview = $("imagePreview");
+    preview.src = img.src;
+    preview.style.display = "block";
+    $("paletteStatus").textContent = sourceLabel;
+  }
+  function handleLocalImage(file){
+    if(!file) return;
+    if(state.paletteObjectUrl) URL.revokeObjectURL(state.paletteObjectUrl);
+    const url = URL.createObjectURL(file);
+    state.paletteObjectUrl = url;
+    const img = new Image();
+    img.onload = () => { setPaletteImage(img, `${T("localImageLabel")}: ${file.name}`); toast("fileLoaded"); };
+    img.src = url;
+  }
+  function handleUrlImage(){
+    const url = val("imageUrl");
+    if(!url) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => { setPaletteImage(img, url); toast("urlLoaded"); };
+    img.onerror = () => { $("paletteStatus").textContent = T("toasts").cors || i18n[state.lang].toasts.cors; toast("cors"); };
+    img.src = url;
+  }
+
+  function extractPalette(){
+    const img = state.paletteImage;
+    if(!img){ toast("noImage"); return; }
+    const canvas = document.createElement("canvas");
+    const max = 130;
+    const ratio = Math.min(max / img.naturalWidth, max / img.naturalHeight, 1) || 1;
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * ratio));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * ratio));
+    const ctx = canvas.getContext("2d", {willReadFrequently:true});
+    try{
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      const buckets = new Map();
+      let total = 0;
+      for(let i=0;i<data.length;i+=4){
+        const a = data[i+3];
+        if(a < 180) continue;
+        const r=data[i], g=data[i+1], b=data[i+2];
+        const key = `${r>>4},${g>>4},${b>>4}`;
+        let bucket = buckets.get(key);
+        if(!bucket){ bucket = {count:0, r:0,g:0,b:0}; buckets.set(key,bucket); }
+        bucket.count++; bucket.r+=r; bucket.g+=g; bucket.b+=b; total++;
+      }
+      const ranked = Array.from(buckets.values()).map(b => ({
+        count:b.count,
+        r:Math.round(b.r/b.count), g:Math.round(b.g/b.count), b:Math.round(b.b/b.count),
+        share: total ? b.count/total*100 : 0
+      })).sort((a,b)=>b.count-a.count);
+      const selected = [];
+      for(const c of ranked){
+        if(selected.every(s => colorDistance(c,s) > 42)) selected.push(c);
+        if(selected.length === 5) break;
+      }
+      for(const c of ranked){ if(selected.length < 5 && !selected.includes(c)) selected.push(c); }
+      state.palette = selected.slice(0,5).map(c => ({...c, hex: rgbToHex(c.r,c.g,c.b)}));
+      renderPalette();
+      toast("paletteReady");
+    } catch(e){
+      $("paletteStatus").textContent = i18n[state.lang].toasts.cors;
+      toast("cors");
+    }
+  }
+  function colorDistance(a,b){
+    const dr=a.r-b.r, dg=a.g-b.g, db=a.b-b.b;
+    return Math.sqrt(dr*dr + dg*dg + db*db);
+  }
+  function rgbToHex(r,g,b){
+    return "#" + [r,g,b].map(v => Math.max(0,Math.min(255,v)).toString(16).padStart(2,"0")).join("").toUpperCase();
+  }
+  function renderPalette(){
+    const sw = $("swatches");
+    sw.innerHTML = "";
+    if(!state.palette.length){ $("paletteStatus").textContent = $("paletteStatus").textContent || ""; return; }
+    $("paletteStatus").textContent = `${i18n[state.lang].toasts.paletteReady}: ${state.palette.map(c=>c.hex).join(", ")}`;
+    state.palette.forEach(c => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "swatch";
+      item.title = state.lang === "fr" ? "Ajouter au champ Style" : "Add to Style field";
+      item.innerHTML = `<div class="swatchColor" style="background:${c.hex}"></div><div class="swatchMeta">${c.hex}<span>${c.share.toFixed(1)}%</span></div>`;
+      item.addEventListener("click", () => { appendPalette([c.hex]); toast("paletteAdded"); });
+      sw.appendChild(item);
+    });
+  }
+  function appendPalette(hexes){
+    if(!hexes || !hexes.length) return;
+    const el = $("paletteField");
+    const existing = el.value.trim();
+    const combined = existing ? `${existing}, ${hexes.join(", ")}` : `palette: ${hexes.join(", ")}`;
+    el.value = combined;
+  }
+
+  function bindEvents(){
+    $("themeBtn").addEventListener("click", ()=>{ state.theme = state.theme === "dark" ? "light" : "dark"; saveState(); applyTheme(); });
+    $("langBtn").addEventListener("click", ()=>{ state.lang = state.lang === "en" ? "fr" : "en"; saveState(); applyLanguage(); renumberBeats(); });
+    ["generateBtn","generateTopBtn"].forEach(id => $(id).addEventListener("click", generatePrompt));
+    ["exportCsvBtn","exportCsvRightBtn"].forEach(id => $(id).addEventListener("click", exportCsv));
+    $("copyPromptBtn").addEventListener("click", ()=>copyText(val("output")));
+    $("saveVersionBtn").addEventListener("click", ()=>saveCurrentVersion(true));
+    $("clearPromptBtn").addEventListener("click", ()=>{ $("output").value=""; updateStats(); toast("promptCleared"); });
+    $("clearFormBtn").addEventListener("click", clearForm);
+    $("loadExampleBtn").addEventListener("click", loadExample);
+    $("addBeatBtn").addEventListener("click", ()=>addBeat());
+    $("downloadHistoryBtn").addEventListener("click", downloadHistory);
+    $("clearVersionsBtn").addEventListener("click", ()=>{ state.versions=[]; saveState(); renderVersions(); toast("versionsCleared"); });
+    $("clearPaletteField").addEventListener("click", ()=>{ $("paletteField").value=""; toast("paletteCleared"); });
+    $("imageFile").addEventListener("change", e => handleLocalImage(e.target.files[0]));
+    $("loadUrlBtn").addEventListener("click", handleUrlImage);
+    $("extractPaletteBtn").addEventListener("click", extractPalette);
+    $("useAllColorsBtn").addEventListener("click", ()=>{ if(!state.palette.length){toast("noPalette");return;} appendPalette(state.palette.map(c=>c.hex)); toast("allColorsAdded"); });
+    $("copyColorsBtn").addEventListener("click", ()=>{ if(!state.palette.length){toast("noPalette");return;} copyText(state.palette.map(c=>c.hex).join(", ")); toast("colorsCopied"); });
+    $("beats").addEventListener("click", e => { if(e.target.classList.contains("removeBeat")){ e.target.closest(".beatRow").remove(); renumberBeats(); } });
+    $("versionList").addEventListener("click", e => {
+      const load = e.target.dataset.versionLoad;
+      const copy = e.target.dataset.versionCopy;
+      const del = e.target.dataset.versionDelete;
+      if(load) loadVersion(load);
+      if(copy){ const v=state.versions.find(v=>v.id===copy); if(v) copyText(v.text); }
+      if(del) deleteVersion(del);
+    });
+    $$("[data-suggest]").forEach(btn => btn.addEventListener("click", () => setSuggested(btn.dataset.suggest)));
+    $$('input[type="checkbox"]').forEach(cb => cb.addEventListener("change", updateSectionStates));
+    $("output").addEventListener("input", updateStats);
+    document.addEventListener("keydown", (e)=>{
+      if(e.ctrlKey && e.key === "Enter"){ e.preventDefault(); generatePrompt(); }
+      if(e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "c"){ e.preventDefault(); copyText(val("output")); }
+      if(e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e"){ e.preventDefault(); exportCsv(); }
+    });
+  }
+
+  function init(){
+    applyTheme();
+    populateOptions();
+    addBeat(); addBeat(); addBeat();
+    bindEvents();
+    applyLanguage();
+    updateSectionStates();
+    renderVersions();
+    updateStats();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
