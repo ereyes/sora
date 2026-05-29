@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creative Workflow Builder</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --panel: rgba(255,255,255,0.82);
+      --panel-strong: rgba(255,255,255,0.92);
+      --line: rgba(19, 26, 35, 0.12);
+      --ink: #131a23;
+      --muted: #53606f;
+      --accent: #6d5efc;
+      --accent-2: #1fc2a6;
+      --warm: #f7b64a;
+      --danger: #b34444;
+      --shadow: 0 24px 80px rgba(17, 24, 39, 0.10);
+      --radius: 24px;
+      --radius-sm: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(109, 94, 252, 0.16), transparent 35%),
+        radial-gradient(circle at 100% 0%, rgba(31, 194, 166, 0.14), transparent 28%),
+        linear-gradient(180deg, #faf8f3 0%, var(--bg) 100%);
+      color: var(--ink);
+      min-height: 100%;
+    }
+
+    body {
+      padding: 24px;
+    }
+
+    .shell {
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(340px, 430px) minmax(620px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.65);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .builder {
+      padding: 22px;
+      position: sticky;
+      top: 24px;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+    }
+
+    .preview {
+      padding: 20px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: clamp(24px, 3vw, 34px);
+      line-height: 1.05;
+      margin: 0 0 10px;
+      letter-spacing: -0.03em;
+    }
+
+    .intro {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section:first-of-type {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      font-size: 15px;
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
+
+    .section-title .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 14px;
+      font: inherit;
+      color: var(--ink);
+      background: rgba(255,255,255,0.9);
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    textarea:focus {
+      border-color: rgba(109, 94, 252, 0.5);
+      box-shadow: 0 0 0 4px rgba(109, 94, 252, 0.10);
+    }
+
+    .subtle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .entry {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.86);
+      padding: 14px;
+      box-shadow: 0 8px 30px rgba(17, 24, 39, 0.05);
+    }
+
+    .entry-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .entry-grid.two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .entry-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .entry-index {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .inline-actions,
+    .actions,
+    .export-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button,
+    .button-like {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      background: #101723;
+      color: #fff;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .18s ease, opacity .18s ease, box-shadow .18s ease;
+      box-shadow: 0 10px 25px rgba(16, 23, 35, 0.12);
+    }
+
+    button:hover,
+    .button-like:hover { transform: translateY(-1px); }
+    button:active,
+    .button-like:active { transform: translateY(0); }
+
+    button.secondary,
+    .button-like.secondary {
+      background: rgba(255,255,255,0.86);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    button.ghost,
+    .button-like.ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: rgba(179,68,68,0.12);
+      color: var(--danger);
+      border: 1px solid rgba(179,68,68,0.18);
+      box-shadow: none;
+      padding: 8px 12px;
+      font-weight: 700;
+    }
+
+    button[disabled] {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none !important;
+    }
+
+    .actions {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .status {
+      margin-top: 12px;
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .preview-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .preview-top h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(255,255,255,0.76);
+    }
+
+    .svg-wrap {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.78));
+      min-height: 620px;
+    }
+
+    #svgHost {
+      width: 100%;
+    }
+
+    #svgHost svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .empty-state {
+      min-height: 620px;
+      display: grid;
+      place-items: center;
+      padding: 40px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(109, 94, 252, 0.08), transparent 25%),
+        radial-gradient(circle at 80% 30%, rgba(31, 194, 166, 0.08), transparent 25%),
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.80));
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    @media (max-width: 1180px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .builder {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 14px; }
+      .builder, .preview { padding: 16px; }
+      .entry-grid.two { grid-template-columns: 1fr; }
+      .svg-wrap, .empty-state { min-height: 500px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="panel builder" aria-label="Creative workflow builder">
+      <div class="eyebrow">Creative workflow builder</div>
+      <h1>Map an idea into a visual workflow.</h1>
+      <p class="intro">Write the core idea, add the tools you use, paste inspiration or reference links, then generate a diagram you can export as SVG or PNG.</p>
+
+      <div class="section stack">
+        <div>
+          <label for="projectTitle">Project title</label>
+          <input id="projectTitle" type="text" placeholder="Example: Editorial motion concept" />
+        </div>
+        <div>
+          <label for="idea">Core idea</label>
+          <textarea id="idea" placeholder="Describe the concept, mood, problem to solve, or the creative direction you want to explore."></textarea>
+          <div class="subtle">This becomes the main anchor of the workflow map.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <h2>Tools</h2>
+          <div class="meta">Name + how you use it</div>
+        </div>
+        <div id="toolsList" class="stack"></div>
+        <div class="inline-actions" style="margin-top: 12px;">
+          <button id="addToolBtn" type="button" class="secondary">+ Add tool</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <h2>Inspiration / references</h2>
+          <div class="meta">URLs, image links, notes</div>
+        </div>
+        <div id="refsList" class="stack"></div>
+        <div class="inline-actions" style="margin-top: 12px;">
+          <button id="addRefBtn" type="button" class="secondary">+ Add reference</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="generateBtn" type="button">Go</button>
+        <button id="loadSampleBtn" type="button" class="secondary">Load sample</button>
+        <button id="clearBtn" type="button" class="ghost">Clear</button>
+      </div>
+
+      <div class="actions" style="margin-top: 14px;">
+        <button id="downloadJsonBtn" type="button" class="secondary">Save data (.json)</button>
+        <button id="importJsonBtn" type="button" class="secondary">Import data (.json)</button>
+        <input id="jsonFileInput" class="hidden-input" type="file" accept="application/json,.json" />
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel preview" aria-label="Workflow preview and export">
+      <div class="preview-top">
+        <div>
+          <div class="eyebrow">Preview</div>
+          <h2>Generated workflow</h2>
+          <div class="stats" id="statsRow">
+            <div class="chip">No workflow yet</div>
+          </div>
+        </div>
+        <div class="export-actions">
+          <button id="downloadSvgBtn" type="button" class="secondary" disabled>Download SVG</button>
+          <button id="downloadPngBtn" type="button" class="secondary" disabled>Download PNG</button>
+        </div>
+      </div>
+
+      <div class="svg-wrap">
+        <div id="svgHost">
+          <div class="empty-state">
+            <div>
+              <strong style="display:block; margin-bottom: 10px; color: var(--ink);">Your workflow will appear here.</strong>
+              Fill in the form on the left, click <strong>Go</strong>, and export the result when it looks right.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-note">The builder works entirely in the browser. Your current inputs are also auto-saved locally on this device.</div>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'creative-workflow-builder-v1';
+    const sampleData = {
+      title: 'Campaign teaser workflow',
+      idea: 'Build a short teaser system around a futuristic editorial concept: collect references, sketch a visual language, test motion directions, then package the strongest version for social and presentation use.',
+      tools: [
+        { name: 'Moodboard / reference board', use: 'Collect visual directions, colors, composition ideas, and pacing references.' },
+        { name: 'Image generation tool', use: 'Explore fast concept variations and unlock unexpected compositions.' },
+        { name: 'Photoshop or similar', use: 'Retouch, composite, and unify the strongest frames into a consistent look.' },
+        { name: 'Premiere / After Effects', use: 'Turn still ideas into a motion pass, pacing test, or teaser edit.' }
+      ],
+      refs: [
+        { label: 'Editorial lighting ref', value: 'https://example.com/editorial-lighting.jpg', note: 'Sharp contrast and dramatic framing.' },
+        { label: 'Motion pacing note', value: 'Use hard cuts, black frames, and restrained typography.', note: '' },
+        { label: 'Color direction', value: 'Chrome silver + warm amber accents', note: '' }
+      ]
+    };
+
+    const state = {
+      lastRender: null
+    };
+
+    const els = {
+      projectTitle: document.getElementById('projectTitle'),
+      idea: document.getElementById('idea'),
+      toolsList: document.getElementById('toolsList'),
+      refsList: document.getElementById('refsList'),
+      addToolBtn: document.getElementById('addToolBtn'),
+      addRefBtn: document.getElementById('addRefBtn'),
+      generateBtn: document.getElementById('generateBtn'),
+      clearBtn: document.getElementById('clearBtn'),
+      loadSampleBtn: document.getElementById('loadSampleBtn'),
+      status: document.getElementById('status'),
+      svgHost: document.getElementById('svgHost'),
+      statsRow: document.getElementById('statsRow'),
+      downloadSvgBtn: document.getElementById('downloadSvgBtn'),
+      downloadPngBtn: document.getElementById('downloadPngBtn'),
+      downloadJsonBtn: document.getElementById('downloadJsonBtn'),
+      importJsonBtn: document.getElementById('importJsonBtn'),
+      jsonFileInput: document.getElementById('jsonFileInput')
+    };
+
+    function uuid() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+
+    function setStatus(message) {
+      els.status.textContent = message || '';
+    }
+
+    function createToolEntry(data = {}) {
+      const item = document.createElement('div');
+      item.className = 'entry';
+      item.dataset.id = uuid();
+      item.innerHTML = `
+        <div class="entry-head">
+          <div class="entry-index">Tool</div>
+          <button type="button" class="danger" data-remove="tool">Remove</button>
+        </div>
+        <div class="entry-grid">
+          <div>
+            <label>Tool name</label>
+            <input type="text" data-field="name" placeholder="Example: Figma" value="${escapeHtmlAttr(data.name || '')}" />
+          </div>
+          <div>
+            <label>How you use it</label>
+            <input type="text" data-field="use" placeholder="Example: Layout, mockups, structure" value="${escapeHtmlAttr(data.use || '')}" />
+          </div>
+        </div>
+      `;
+      bindEntryEvents(item);
+      return item;
+    }
+
+    function createRefEntry(data = {}) {
+      const item = document.createElement('div');
+      item.className = 'entry';
+      item.dataset.id = uuid();
+      item.innerHTML = `
+        <div class="entry-head">
+          <div class="entry-index">Reference</div>
+          <button type="button" class="danger" data-remove="ref">Remove</button>
+        </div>
+        <div class="entry-grid two">
+          <div>
+            <label>Label</label>
+            <input type="text" data-field="label" placeholder="Example: Cinematic portrait ref" value="${escapeHtmlAttr(data.label || '')}" />
+          </div>
+          <div>
+            <label>URL or short note</label>
+            <input type="text" data-field="value" placeholder="Paste a link or write a note" value="${escapeHtmlAttr(data.value || '')}" />
+          </div>
+        </div>
+        <div style="margin-top: 10px;">
+          <label>Why it matters (optional)</label>
+          <input type="text" data-field="note" placeholder="Example: Mood, lighting, texture, pacing" value="${escapeHtmlAttr(data.note || '')}" />
+        </div>
+      `;
+      bindEntryEvents(item);
+      return item;
+    }
+
+    function bindEntryEvents(item) {
+      item.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', () => saveToStorage());
+      });
+      const removeBtn = item.querySelector('[data-remove]');
+      removeBtn.addEventListener('click', () => {
+        item.remove();
+        renumberEntries();
+        saveToStorage();
+      });
+    }
+
+    function renumberEntries() {
+      [...els.toolsList.children].forEach((entry, i) => {
+        const badge = entry.querySelector('.entry-index');
+        if (badge) badge.textContent = `Tool ${String(i + 1).padStart(2, '0')}`;
+      });
+      [...els.refsList.children].forEach((entry, i) => {
+        const badge = entry.querySelector('.entry-index');
+        if (badge) badge.textContent = `Reference ${String(i + 1).padStart(2, '0')}`;
+      });
+    }
+
+    function addTool(data = {}) {
+      els.toolsList.appendChild(createToolEntry(data));
+      renumberEntries();
+      saveToStorage();
+    }
+
+    function addRef(data = {}) {
+      els.refsList.appendChild(createRefEntry(data));
+      renumberEntries();
+      saveToStorage();
+    }
+
+    function getFormData() {
+      const title = els.projectTitle.value.trim();
+      const idea = els.idea.value.trim();
+      const tools = [...els.toolsList.children].map(entry => ({
+        name: entry.querySelector('[data-field="name"]').value.trim(),
+        use: entry.querySelector('[data-field="use"]').value.trim()
+      })).filter(item => item.name || item.use);
+
+      const refs = [...els.refsList.children].map(entry => ({
+        label: entry.querySelector('[data-field="label"]').value.trim(),
+        value: entry.querySelector('[data-field="value"]').value.trim(),
+        note: entry.querySelector('[data-field="note"]').value.trim()
+      })).filter(item => item.label || item.value || item.note);
+
+      return { title, idea, tools, refs };
+    }
+
+    function applyData(data = {}) {
+      els.projectTitle.value = data.title || '';
+      els.idea.value = data.idea || '';
+      els.toolsList.innerHTML = '';
+      els.refsList.innerHTML = '';
+
+      if (Array.isArray(data.tools) && data.tools.length) {
+        data.tools.forEach(tool => addTool(tool));
+      } else {
+        addTool();
+      }
+
+      if (Array.isArray(data.refs) && data.refs.length) {
+        data.refs.forEach(ref => addRef(ref));
+      } else {
+        addRef();
+      }
+
+      renumberEntries();
+      saveToStorage();
+    }
+
+    function saveToStorage() {
+      const data = getFormData();
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (err) {
+        console.warn('Could not save locally', err);
+      }
+      const isCurrent = Boolean(state.lastRender && state.lastRender.dataKey === JSON.stringify(data));
+      updateStats(data, isCurrent);
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (err) {
+        console.warn('Could not read locally saved data', err);
+        return null;
+      }
+    }
+
+    function clearForm() {
+      applyData({ title: '', idea: '', tools: [{}], refs: [{}] });
+      state.lastRender = null;
+      els.svgHost.innerHTML = `
+        <div class="empty-state">
+          <div>
+            <strong style="display:block; margin-bottom: 10px; color: var(--ink);">Your workflow will appear here.</strong>
+            Fill in the form on the left, click <strong>Go</strong>, and export the result when it looks right.
+          </div>
+        </div>
+      `;
+      els.downloadSvgBtn.disabled = true;
+      els.downloadPngBtn.disabled = true;
+      updateStats(getFormData(), false);
+      setStatus('Cleared.');
+    }
+
+    function updateStats(data, hasRender) {
+      const chips = [];
+      chips.push(`<div class="chip">${escapeHtml(data.tools.length)} tool${data.tools.length === 1 ? '' : 's'}</div>`);
+      chips.push(`<div class="chip">${escapeHtml(data.refs.length)} reference${data.refs.length === 1 ? '' : 's'}</div>`);
+      chips.push(`<div class="chip">${data.idea ? 'Idea ready' : 'Add your idea'}</div>`);
+      chips.push(`<div class="chip">${hasRender ? 'Preview updated' : 'Not generated yet'}</div>`);
+      els.statsRow.innerHTML = chips.join('');
+    }
+
+    function slugify(input) {
+      return (input || 'creative-workflow')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'creative-workflow';
+    }
+
+    function escapeHtml(str = '') {
+      str = String(str ?? '');
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeHtmlAttr(str = '') {
+      return escapeHtml(str).replace(/`/g, '&#96;');
+    }
+
+    function escapeXml(str = '') {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function splitLongWord(word, max) {
+      if (word.length <= max) return [word];
+      const parts = [];
+      let i = 0;
+      while (i < word.length) {
+        parts.push(word.slice(i, i + max));
+        i += max;
+      }
+      return parts;
+    }
+
+    function wrapText(text, maxChars = 48, maxLines = 8) {
+      const source = (text || '').replace(/\s+/g, ' ').trim();
+      if (!source) return ['—'];
+      const words = source.split(' ').flatMap(word => splitLongWord(word, Math.max(8, Math.floor(maxChars * 0.9))));
+      const lines = [];
+      let line = '';
+
+      words.forEach(word => {
+        const next = line ? `${line} ${word}` : word;
+        if (next.length <= maxChars) {
+          line = next;
+        } else {
+          if (line) lines.push(line);
+          line = word;
+        }
+      });
+      if (line) lines.push(line);
+
+      if (lines.length > maxLines) {
+        const trimmed = lines.slice(0, maxLines);
+        trimmed[maxLines - 1] = trimmed[maxLines - 1].replace(/[.,;:!?\s]*$/, '') + '…';
+        return trimmed;
+      }
+      return lines;
+    }
+
+    function compactRef(value) {
+      const v = (value || '').trim();
+      if (!v) return 'Reference note';
+      return v.length > 52 ? v.slice(0, 49) + '…' : v;
+    }
+
+    function lineBlock(lines, x, y, options = {}) {
+      const {
+        fill = '#131a23',
+        size = 18,
+        weight = 500,
+        lineHeight = Math.round(size * 1.35),
+        family = 'Inter, system-ui, sans-serif',
+        opacity = 1,
+        anchor = 'start'
+      } = options;
+      return lines.map((line, i) => `
+        <text x="${x}" y="${y + i * lineHeight}" fill="${fill}" font-size="${size}" font-weight="${weight}" font-family="${family}" opacity="${opacity}" text-anchor="${anchor}">${escapeXml(line)}</text>
+      `).join('');
+    }
+
+    function roundedRect({ x, y, width, height, radius = 26, fill = '#fff', stroke = 'rgba(0,0,0,0.12)', strokeWidth = 1, opacity = 1 }) {
+      return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${radius}" ry="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}" />`;
+    }
+
+    function connectorPath(x1, y1, x2, y2, dashed = false) {
+      const midY = y1 + (y2 - y1) / 2;
+      const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+      return `<path d="${d}" fill="none" stroke="rgba(19, 26, 35, 0.42)" stroke-width="3" ${dashed ? 'stroke-dasharray="8 8"' : ''} marker-end="url(#arrow)" />`;
+    }
+
+    function renderWorkflow(data) {
+      const title = data.title || 'Untitled workflow';
+      const ideaText = data.idea || 'Describe your idea so the map has a clear starting point.';
+      const tools = data.tools.length ? data.tools : [{ name: 'Add tools', use: 'List the software, methods, or stages you use to turn the idea into something concrete.' }];
+      const refs = data.refs;
+
+      const width = 1400;
+      const leftX = 72;
+      const leftW = 860;
+      const rightX = 1002;
+      const rightW = 326;
+      const titleY = 70;
+
+      const ideaLines = wrapText(ideaText, 80, 8);
+      const ideaHeight = 126 + ideaLines.length * 28;
+      const ideaY = 132;
+
+      const toolHeights = tools.map(tool => {
+        const nameLines = wrapText(tool.name || 'Unnamed tool', 34, 2);
+        const useLines = wrapText(tool.use || 'No usage note added yet.', 78, 4);
+        return 92 + nameLines.length * 24 + useLines.length * 18;
+      });
+
+      const toolsStartY = ideaY + ideaHeight + 70;
+      const toolGap = 28;
+      let currentToolY = toolsStartY;
+      const toolLayouts = tools.map((tool, idx) => {
+        const height = toolHeights[idx];
+        const layout = { x: leftX, y: currentToolY, w: leftW, h: height };
+        currentToolY += height + toolGap;
+        return layout;
+      });
+
+      const outputY = toolLayouts.length ? toolLayouts[toolLayouts.length - 1].y + toolLayouts[toolLayouts.length - 1].h + 44 : toolsStartY + 44;
+      const outputHeight = 132;
+
+      const refLayouts = [];
+      let refY = 220;
+      const refGap = 20;
+      if (refs.length) {
+        refs.forEach(ref => {
+          const titleLines = wrapText(ref.label || 'Reference', 22, 2);
+          const valueLines = wrapText(compactRef(ref.value || ref.note || ''), 34, 3);
+          const noteLines = ref.note ? wrapText(ref.note, 34, 2) : [];
+          const h = 90 + titleLines.length * 22 + valueLines.length * 18 + noteLines.length * 18;
+          refLayouts.push({ x: rightX, y: refY, w: rightW, h, ref });
+          refY += h + refGap;
+        });
+      }
+
+      const bottom = Math.max(outputY + outputHeight + 70, refY + 40, 930);
+      const height = bottom;
+      const generatedAt = new Date().toLocaleString();
+
+      let svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${width} ${height}" role="img" aria-label="Creative workflow diagram">
+          <defs>
+            <linearGradient id="pageGlow" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fdfcf8" />
+              <stop offset="100%" stop-color="#f4efe5" />
+            </linearGradient>
+            <linearGradient id="ideaFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#ffffff" />
+              <stop offset="100%" stop-color="#f6f4ff" />
+            </linearGradient>
+            <linearGradient id="toolFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#ffffff" />
+              <stop offset="100%" stop-color="#eefaf7" />
+            </linearGradient>
+            <linearGradient id="refFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fffaf0" />
+              <stop offset="100%" stop-color="#fffdf8" />
+            </linearGradient>
+            <linearGradient id="outputFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fffdfb" />
+              <stop offset="100%" stop-color="#fff1d6" />
+            </linearGradient>
+            <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="150%">
+              <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="rgba(17, 24, 39, 0.08)" />
+            </filter>
+            <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+              <path d="M 0 0 L 12 6 L 0 12 z" fill="rgba(19, 26, 35, 0.42)" />
+            </marker>
+          </defs>
+
+          <rect x="0" y="0" width="${width}" height="${height}" fill="url(#pageGlow)" />
+          <circle cx="1220" cy="130" r="160" fill="rgba(109, 94, 252, 0.08)" />
+          <circle cx="180" cy="90" r="120" fill="rgba(31, 194, 166, 0.10)" />
+          <circle cx="1180" cy="${height - 110}" r="180" fill="rgba(247, 182, 74, 0.09)" />
+
+          ${roundedRect({ x: 34, y: 28, width: width - 68, height: height - 56, radius: 34, fill: 'rgba(255,255,255,0.78)', stroke: 'rgba(19, 26, 35, 0.08)' })}
+
+          <text x="${leftX}" y="${titleY}" fill="#4d5a68" font-size="14" font-weight="700" font-family="Inter, system-ui, sans-serif" letter-spacing="2">CREATIVE WORKFLOW MAP</text>
+          <text x="${leftX}" y="${titleY + 44}" fill="#131a23" font-size="34" font-weight="800" font-family="Inter, system-ui, sans-serif">${escapeXml(title)}</text>
+          <text x="${leftX}" y="${titleY + 72}" fill="#53606f" font-size="14" font-weight="500" font-family="Inter, system-ui, sans-serif">Generated ${escapeXml(generatedAt)} • ${escapeXml(String(data.tools.length))} tools • ${escapeXml(String(data.refs.length))} references</text>
+
+          ${roundedRect({ x: leftX, y: ideaY, width: leftW, height: ideaHeight, radius: 30, fill: 'url(#ideaFill)', stroke: 'rgba(109, 94, 252, 0.24)' })}
+          <rect x="${leftX + 24}" y="${ideaY + 24}" width="118" height="34" rx="17" fill="rgba(109, 94, 252, 0.12)" />
+          <text x="${leftX + 83}" y="${ideaY + 47}" text-anchor="middle" fill="#5d4ff0" font-size="13" font-weight="800" font-family="Inter, system-ui, sans-serif" letter-spacing="1.2">01 · CORE IDEA</text>
+          ${lineBlock(ideaLines, leftX + 30, ideaY + 92, { size: 24, weight: 650, lineHeight: 30, fill: '#18202a' })}
+
+          <text x="${leftX}" y="${toolsStartY - 24}" fill="#4d5a68" font-size="14" font-weight="700" font-family="Inter, system-ui, sans-serif" letter-spacing="2">02 · TOOLCHAIN</text>
+      `;
+
+      const ideaExitX = leftX + leftW / 2;
+      const ideaExitY = ideaY + ideaHeight;
+
+      toolLayouts.forEach((layout, idx) => {
+        const tool = tools[idx];
+        const nameLines = wrapText(tool.name || 'Unnamed tool', 34, 2);
+        const useLines = wrapText(tool.use || 'No usage note added yet.', 78, 4);
+        const num = String(idx + 1).padStart(2, '0');
+        const cardTop = layout.y;
+        const badgeY = cardTop + 24;
+        const textY = cardTop + 72;
+
+        svg += `
+          ${roundedRect({ x: layout.x, y: layout.y, width: layout.w, height: layout.h, radius: 28, fill: 'url(#toolFill)', stroke: 'rgba(31, 194, 166, 0.24)' })}
+          <rect x="${layout.x + 24}" y="${badgeY}" width="102" height="32" rx="16" fill="rgba(31, 194, 166, 0.14)" />
+          <text x="${layout.x + 75}" y="${badgeY + 21}" text-anchor="middle" fill="#13957f" font-size="13" font-weight="800" font-family="Inter, system-ui, sans-serif" letter-spacing="1.1">TOOL ${num}</text>
+          ${lineBlock(nameLines, layout.x + 24, textY, { size: 24, weight: 750, lineHeight: 28, fill: '#15212b' })}
+          ${lineBlock(useLines, layout.x + 24, textY + nameLines.length * 28 + 18, { size: 16, weight: 500, lineHeight: 22, fill: '#4f5d6b' })}
+        `;
+
+        const centerX = layout.x + layout.w / 2;
+        if (idx === 0) {
+          svg += connectorPath(ideaExitX, ideaExitY + 6, centerX, layout.y - 8, false);
+        } else {
+          const prev = toolLayouts[idx - 1];
+          const prevCenterX = prev.x + prev.w / 2;
+          svg += connectorPath(prevCenterX, prev.y + prev.h + 6, centerX, layout.y - 8, false);
+        }
+      });
+
+      if (!toolLayouts.length) {
+        svg += connectorPath(ideaExitX, ideaExitY + 6, ideaExitX, outputY - 8, false);
+      }
+
+      const outputX = leftX;
+      svg += `
+        ${roundedRect({ x: outputX, y: outputY, width: leftW, height: outputHeight, radius: 30, fill: 'url(#outputFill)', stroke: 'rgba(247, 182, 74, 0.35)' })}
+        <rect x="${outputX + 24}" y="${outputY + 24}" width="120" height="34" rx="17" fill="rgba(247, 182, 74, 0.18)" />
+        <text x="${outputX + 84}" y="${outputY + 47}" text-anchor="middle" fill="#9a6a10" font-size="13" font-weight="800" font-family="Inter, system-ui, sans-serif" letter-spacing="1.2">03 · OUTPUT</text>
+        <text x="${outputX + 24}" y="${outputY + 92}" fill="#18202a" font-size="24" font-weight="760" font-family="Inter, system-ui, sans-serif">Turn the idea into a concrete creative deliverable.</text>
+        <text x="${outputX + 24}" y="${outputY + 122}" fill="#4f5d6b" font-size="16" font-weight="500" font-family="Inter, system-ui, sans-serif">Use the sequence above to iterate, refine, and package the work for sharing, review, or production.</text>
+      `;
+
+      if (toolLayouts.length) {
+        const last = toolLayouts[toolLayouts.length - 1];
+        svg += connectorPath(last.x + last.w / 2, last.y + last.h + 6, outputX + leftW / 2, outputY - 8, false);
+      } else {
+        svg += connectorPath(ideaExitX, ideaExitY + 6, outputX + leftW / 2, outputY - 8, false);
+      }
+
+      svg += `
+        <text x="${rightX}" y="${ideaY - 10}" fill="#4d5a68" font-size="14" font-weight="700" font-family="Inter, system-ui, sans-serif" letter-spacing="2">INSPIRATION / REFERENCES</text>
+      `;
+
+      if (refLayouts.length) {
+        refLayouts.forEach((card, idx) => {
+          const titleLines = wrapText(card.ref.label || 'Reference', 22, 2);
+          const valueText = compactRef(card.ref.value || card.ref.note || 'Reference note');
+          const valueLines = wrapText(valueText, 34, 3);
+          const noteLines = card.ref.note ? wrapText(card.ref.note, 34, 2) : [];
+          const cardMidY = card.y + card.h / 2;
+          const ideaAnchorY = ideaY + Math.min(ideaHeight - 30, 74 + idx * 54);
+
+          svg += `
+            ${roundedRect({ x: card.x, y: card.y, width: card.w, height: card.h, radius: 26, fill: 'url(#refFill)', stroke: 'rgba(247, 182, 74, 0.26)' })}
+            <rect x="${card.x + 18}" y="${card.y + 18}" width="118" height="28" rx="14" fill="rgba(247, 182, 74, 0.16)" />
+            <text x="${card.x + 77}" y="${card.y + 37}" text-anchor="middle" fill="#9a6a10" font-size="12" font-weight="800" font-family="Inter, system-ui, sans-serif" letter-spacing="1">REF ${String(idx + 1).padStart(2, '0')}</text>
+            ${lineBlock(titleLines, card.x + 18, card.y + 72, { size: 20, weight: 730, lineHeight: 24, fill: '#18202a' })}
+            ${lineBlock(valueLines, card.x + 18, card.y + 72 + titleLines.length * 24 + 16, { size: 15, weight: 500, lineHeight: 20, fill: '#4f5d6b' })}
+            ${noteLines.length ? lineBlock(noteLines, card.x + 18, card.y + 72 + titleLines.length * 24 + 18 + valueLines.length * 20 + 12, { size: 14, weight: 500, lineHeight: 18, fill: '#6a7683' }) : ''}
+          `;
+          svg += connectorPath(card.x, cardMidY, leftX + leftW, ideaAnchorY, true);
+        });
+      } else {
+        svg += `
+          ${roundedRect({ x: rightX, y: 220, width: rightW, height: 160, radius: 26, fill: 'url(#refFill)', stroke: 'rgba(247, 182, 74, 0.20)' })}
+          <text x="${rightX + 24}" y="274" fill="#18202a" font-size="22" font-weight="760" font-family="Inter, system-ui, sans-serif">No references yet.</text>
+          <text x="${rightX + 24}" y="304" fill="#4f5d6b" font-size="15" font-weight="500" font-family="Inter, system-ui, sans-serif">Add image links, notes, or other inspiration to show what is informing the concept.</text>
+          ${connectorPath(rightX, 300, leftX + leftW, ideaY + 90, true)}
+        `;
+      }
+
+      svg += `
+          <text x="${leftX}" y="${height - 34}" fill="#71808e" font-size="13" font-weight="500" font-family="Inter, system-ui, sans-serif">Built with the Creative Workflow Builder • export as SVG or PNG • edit inputs and regenerate anytime</text>
+        </svg>
+      `;
+
+      state.lastRender = { svg, title, dataKey: JSON.stringify(data) };
+      els.svgHost.innerHTML = svg;
+      els.downloadSvgBtn.disabled = false;
+      els.downloadPngBtn.disabled = false;
+      updateStats(data, true);
+      setStatus('Workflow generated.');
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    function downloadSVG() {
+      const svgEl = els.svgHost.querySelector('svg');
+      if (!svgEl) return;
+      const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+      const filename = `${slugify((state.lastRender && state.lastRender.title) || 'creative-workflow')}.svg`;
+      downloadBlob(blob, filename);
+      setStatus('SVG downloaded.');
+    }
+
+    function downloadPNG() {
+      const svgEl = els.svgHost.querySelector('svg');
+      if (!svgEl) return;
+      const viewBox = (svgEl.getAttribute('viewBox') || '0 0 1400 900').split(/\s+/).map(Number);
+      const [, , width, height] = viewBox;
+      const canvas = document.createElement('canvas');
+      const scale = 2;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#f7f2e9';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((pngBlob) => {
+          if (pngBlob) {
+            const filename = `${slugify((state.lastRender && state.lastRender.title) || 'creative-workflow')}.png`;
+            downloadBlob(pngBlob, filename);
+            setStatus('PNG downloaded.');
+          }
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        setStatus('Could not export PNG from this browser. SVG export still works.');
+      };
+      img.src = url;
+    }
+
+    function downloadJSON() {
+      const data = getFormData();
+      const pretty = JSON.stringify(data, null, 2);
+      const blob = new Blob([pretty], { type: 'application/json;charset=utf-8' });
+      const filename = `${slugify(data.title || 'creative-workflow-data')}.json`;
+      downloadBlob(blob, filename);
+      setStatus('JSON saved.');
+    }
+
+    function importJSON(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(String(reader.result));
+          applyData({
+            title: data.title || '',
+            idea: data.idea || '',
+            tools: Array.isArray(data.tools) ? data.tools : [{}],
+            refs: Array.isArray(data.refs) ? data.refs : [{}]
+          });
+          renderWorkflow(getFormData());
+          setStatus('JSON imported.');
+        } catch (err) {
+          console.error(err);
+          setStatus('That file does not look like valid workflow JSON.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    els.addToolBtn.addEventListener('click', () => {
+      addTool();
+      setStatus('Tool added.');
+    });
+
+    els.addRefBtn.addEventListener('click', () => {
+      addRef();
+      setStatus('Reference added.');
+    });
+
+    els.generateBtn.addEventListener('click', () => {
+      const data = getFormData();
+      renderWorkflow(data);
+      saveToStorage();
+    });
+
+    els.loadSampleBtn.addEventListener('click', () => {
+      applyData(sampleData);
+      renderWorkflow(getFormData());
+      setStatus('Sample loaded.');
+    });
+
+    els.clearBtn.addEventListener('click', clearForm);
+    els.downloadSvgBtn.addEventListener('click', downloadSVG);
+    els.downloadPngBtn.addEventListener('click', downloadPNG);
+    els.downloadJsonBtn.addEventListener('click', downloadJSON);
+
+    els.importJsonBtn.addEventListener('click', () => els.jsonFileInput.click());
+    els.jsonFileInput.addEventListener('change', (event) => {
+      importJSON(event.target.files && event.target.files[0]);
+      event.target.value = '';
+    });
+
+    [els.projectTitle, els.idea].forEach(input => {
+      input.addEventListener('input', () => saveToStorage());
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'enter') {
+        event.preventDefault();
+        renderWorkflow(getFormData());
+        saveToStorage();
+      }
+    });
+
+    (function init() {
+      const local = loadFromStorage();
+      applyData(local || { title: '', idea: '', tools: [{}], refs: [{}] });
+      updateStats(getFormData(), false);
+      if (local && (local.title || local.idea || (local.tools && local.tools.length && (local.tools[0].name || local.tools[0].use)) || (local.refs && local.refs.length && (local.refs[0].label || local.refs[0].value || local.refs[0].note)))) {
+        renderWorkflow(getFormData());
+        setStatus('Loaded your locally saved workflow.');
+      }
+    })();
+  </script>
+</body>
+</html>
