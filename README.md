@@ -53,7 +53,6 @@ No build step is required if each deliverable remains a self-contained, single-f
 [![Status: Prototype](https://img.shields.io/badge/status-prototype-blue.svg?style=for-the-badge)](#)
 [![Format: Single-file HTML](https://img.shields.io/badge/format-single--file%20HTML-orange.svg?style=for-the-badge&logo=html5&logoColor=white)](#)
 [![Project: Sora Deliverables](https://img.shields.io/badge/project-Sora%20Deliverables-7B61FF.svg?style=for-the-badge)](#)
-[![Includes: PowerPoint](https://img.shields.io/badge/includes-PowerPoint-B7472A.svg?style=for-the-badge&logo=microsoftpowerpoint&logoColor=white)](#)
 [![UI: EN / FR](https://img.shields.io/badge/UI-EN%20%2F%20FR-green.svg?style=for-the-badge)](#)
 
 ## License
@@ -73,7 +72,7 @@ Under the following terms:
 
 ### Suggested attribution
 
-> “Sora Deliverables” by **[Everardo Reyes, Master CEN, Univ. Paris 8]**, licensed under **CC BY-SA 4.0**.  
+> “Sora Deliverables” by **Everardo Reyes, Master CEN, Univ. Paris 8**, licensed under **CC BY-SA 4.0**.  
 > License: https://creativecommons.org/licenses/by-sa/4.0/
 
 ### Notes
