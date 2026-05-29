@@ -18,6 +18,7 @@ The repository is organized so each deliverable lives in its own folder, with it
 
 ## Repository Structure
 
+```text
 sora/
 ├── README.md
 ├── <presentation-file>.pdf
@@ -27,6 +28,15 @@ sora/
 │   └── https://ereyes.github.io/sora/prompt_assistant/sora_prompt_builder.html
 └── sora-data-files-export/
     └── https://ereyes.github.io/sora/sora-data-files-export/sora-gallery.html
+```
+
+## Live versions
+
+https://ereyes.github.io/sora/creative_workflow_builder/creative_workflow_builder.html
+
+https://ereyes.github.io/sora/prompt_assistant/sora_prompt_builder.html
+
+https://ereyes.github.io/sora/sora-data-files-export/sora-gallery.html
 
 
 ---
@@ -66,7 +76,7 @@ Under the following terms:
 - **ShareAlike** — if you remix, transform, or build upon the material, distribute your contributions under the same license as the original.
 - **No additional restrictions** — do not apply legal terms or technological measures that restrict others from doing anything the license permits.
 
-“Sora Deliverables” by **Everardo Reyes, Master CEN, Univ. Paris 8**, licensed under **CC BY-SA 4.0**.  
+“Sora Deliverables” by **Everardo Reyes, Univ. Paris 8**, licensed under **CC BY-SA 4.0**.  
 License: https://creativecommons.org/licenses/by-sa/4.0/
 
 ### Notes
