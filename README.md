@@ -25,7 +25,7 @@ sora/
 ├── creative_workflow_builder/
 │   └── https://ereyes.github.io/sora/creative_workflow_builder/creative_workflow_builder.html
 ├── prompt_assistant/
-│   └── sora_prompt_builder.html
+│   └── https://ereyes.github.io/sora/prompt_assistant/sora_prompt_builder.html
 └── sora-data-files-export/
     └── sora-gallery.html
 ```
