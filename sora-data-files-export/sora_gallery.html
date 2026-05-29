@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sora Video Gallery</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111;
+      background: #eee;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #eee;
+    }
+
+    header {
+      padding: 28px 28px 8px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 650;
+      letter-spacing: -0.03em;
+    }
+
+    #count {
+      margin: 0;
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    main {
+      padding: 24px 28px 40px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 220px));
+      gap: 18px;
+      align-items: start;
+      justify-content: start;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #cfcfcf;
+      padding: 10px;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 400px;
+      background: #111;
+      border: 1px solid #aaa;
+    }
+
+    .prompt-toggle {
+      display: block;
+      width: 100%;
+      margin: 10px 0 0;
+      padding: 7px 9px;
+      border: 1px solid #999;
+      border-radius: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      background: #eee;
+      color: #111;
+      font: inherit;
+      font-size: 0.85rem;
+      line-height: 1.2;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .prompt-toggle:hover,
+    .prompt-toggle:focus-visible {
+      background: #e0e0e0;
+    }
+
+    .prompt {
+      margin: 10px 0 0;
+      color: #222;
+      font-size: 0.86rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .notice {
+      margin: 8px 0 0;
+      color: #555;
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .status {
+      max-width: 760px;
+      margin: 0;
+      padding: 14px 16px;
+      background: #fff;
+      border: 1px solid #cfcfcf;
+      color: #333;
+      line-height: 1.45;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      padding: 0 0.25em;
+    }
+
+    @media (max-width: 520px) {
+      header {
+        padding: 22px 18px 4px;
+      }
+
+      main {
+        padding: 18px 18px 32px;
+      }
+
+      .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 220px));
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sora Video Gallery</h1>
+    <p id="count">Loading generations.json and videos.csv…</p>
+  </header>
+
+  <main>
+    <section id="gallery" class="gallery" aria-live="polite"></section>
+    <p id="status" class="status hidden"></p>
+  </main>
+
+  <script>
+    const JSON_FILE = "generations.json";
+    const CSV_FILE = "videos.csv";
+    const DEFAULT_WIDTH = 704;
+    const DEFAULT_HEIGHT = 1280;
+
+    const gallery = document.querySelector("#gallery");
+    const count = document.querySelector("#count");
+    const status = document.querySelector("#status");
+
+    function normalizeId(value) {
+      const clean = String(value || "")
+        .trim()
+        .split(/[\\/]/)
+        .pop()
+        .replace(/\.mp4$/i, "")
+        .toLowerCase();
+
+      return clean;
+    }
+
+    function videoFilenameFromId(id) {
+      const cleanId = String(id || "").trim();
+      if (!cleanId) return "";
+      return cleanId.toLowerCase().endsWith(".mp4") ? cleanId : `${cleanId}.mp4`;
+    }
+
+    function normalizeGenerations(json) {
+      if (Array.isArray(json)) return json;
+
+      const likelyKeys = ["generations", "videos", "items", "data", "results"];
+      for (const key of likelyKeys) {
+        if (Array.isArray(json?.[key])) return json[key];
+      }
+
+      throw new Error("Could not find a video array in generations.json.");
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (char === '"' && next === '"') {
+            field += '"';
+            i += 1;
+          } else if (char === '"') {
+            inQuotes = false;
+          } else {
+            field += char;
+          }
+          continue;
+        }
+
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ",") {
+          row.push(field);
+          field = "";
+        } else if (char === "\n") {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+        } else if (char !== "\r") {
+          field += char;
+        }
+      }
+
+      if (field || row.length) {
+        row.push(field);
+        rows.push(row);
+      }
+
+      if (rows.length === 0) return [];
+
+      const headers = rows.shift().map(header => header.trim().toLowerCase());
+      return rows
+        .filter(cells => cells.some(cell => String(cell || "").trim()))
+        .map(cells => {
+          const record = {};
+          headers.forEach((header, index) => {
+            record[header] = String(cells[index] || "").trim();
+          });
+          return record;
+        });
+    }
+
+    function buildVideoUrlMap(csvRows) {
+      const map = new Map();
+
+      for (const row of csvRows) {
+        const id = normalizeId(row.id);
+        const url = String(row.url || "").trim();
+        if (id && url) map.set(id, url);
+      }
+
+      return map;
+    }
+
+    function showStatus(message) {
+      status.textContent = message;
+      status.classList.remove("hidden");
+    }
+
+    function hideStatus() {
+      status.textContent = "";
+      status.classList.add("hidden");
+    }
+
+    function addPromptToggle(card, promptText, index) {
+      const promptId = `prompt-${index}`;
+
+      const button = document.createElement("button");
+      button.className = "prompt-toggle";
+      button.type = "button";
+      button.setAttribute("aria-expanded", "false");
+      button.setAttribute("aria-controls", promptId);
+      button.textContent = "Show prompt";
+
+      const prompt = document.createElement("p");
+      prompt.className = "prompt";
+      prompt.id = promptId;
+      prompt.hidden = true;
+      prompt.textContent = promptText || "No prompt available.";
+
+      button.addEventListener("click", () => {
+        const isExpanded = button.getAttribute("aria-expanded") === "true";
+        button.setAttribute("aria-expanded", String(!isExpanded));
+        button.textContent = isExpanded ? "Show prompt" : "Hide prompt";
+        prompt.hidden = isExpanded;
+      });
+
+      card.append(button, prompt);
+    }
+
+    function renderGallery(items, videoUrlMap) {
+      gallery.innerHTML = "";
+      hideStatus();
+
+      const validItems = items.filter(item => item && item.id);
+      const missingRemoteUrls = [];
+      count.textContent = `${validItems.length} video${validItems.length === 1 ? "" : "s"}`;
+
+      if (validItems.length === 0) {
+        showStatus("No videos with an id field were found in generations.json.");
+        return;
+      }
+
+      for (const [index, item] of validItems.entries()) {
+        const normalizedId = normalizeId(item.id);
+        const remoteUrl = videoUrlMap.get(normalizedId);
+        const sourceUrl = remoteUrl || videoFilenameFromId(item.id);
+
+        if (!remoteUrl) missingRemoteUrls.push(videoFilenameFromId(item.id));
+
+        const card = document.createElement("article");
+        card.className = "card";
+
+        const video = document.createElement("video");
+        video.controls = true;
+        video.preload = "metadata";
+        video.playsInline = true;
+
+        const width = Number(item.width) || DEFAULT_WIDTH;
+        const height = Number(item.height) || DEFAULT_HEIGHT;
+        video.width = width;
+        video.height = height;
+        video.style.aspectRatio = `${width} / ${height}`;
+
+        const source = document.createElement("source");
+        source.src = sourceUrl;
+        source.type = "video/mp4";
+        video.appendChild(source);
+        video.append("Your browser does not support embedded MP4 video playback.");
+
+        card.append(video);
+        addPromptToggle(card, item.prompt, index);
+
+        if (!remoteUrl) {
+          const notice = document.createElement("p");
+          notice.className = "notice";
+          notice.textContent = "No remote URL found in videos.csv; using the local filename instead.";
+          card.appendChild(notice);
+        }
+
+        gallery.appendChild(card);
+      }
+
+      if (missingRemoteUrls.length > 0) {
+        showStatus(
+          `${missingRemoteUrls.length} video${missingRemoteUrls.length === 1 ? "" : "s"} did not have a matching remote URL in ${CSV_FILE}. ` +
+          `Those entries fall back to local MP4 filenames.`
+        );
+      }
+    }
+
+    async function fetchTextFile(filename) {
+      const response = await fetch(filename, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Could not load ${filename}: ${response.status} ${response.statusText}`);
+      }
+      return response.text();
+    }
+
+    async function fetchJsonFile(filename) {
+      const response = await fetch(filename, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Could not load ${filename}: ${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    }
+
+    async function init() {
+      try {
+        const [json, csvText] = await Promise.all([
+          fetchJsonFile(JSON_FILE),
+          fetchTextFile(CSV_FILE)
+        ]);
+
+        const generations = normalizeGenerations(json);
+        const videoUrlMap = buildVideoUrlMap(parseCsv(csvText));
+        renderGallery(generations, videoUrlMap);
+      } catch (error) {
+        count.textContent = "Gallery not loaded";
+        showStatus(
+          `${error.message} Make sure this HTML file, ${JSON_FILE}, and ${CSV_FILE} are in the same folder. ` +
+          `If you opened the page directly from your filesystem, serve the folder with a local web server, for example: ` +
+          `python3 -m http.server`
+        );
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
