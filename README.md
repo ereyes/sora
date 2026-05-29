@@ -23,7 +23,7 @@ sora/
 ├── README.md
 ├── <presentation-file>.pdf
 ├── creative_workflow_builder/
-│   └── [creative_workflow_builder.html](https://ereyes.github.io/sora/creative_workflow_builder/creative_workflow_builder.html)
+│   └── https://ereyes.github.io/sora/creative_workflow_builder/creative_workflow_builder.html
 ├── prompt_assistant/
 │   └── sora_prompt_builder.html
 └── sora-data-files-export/
