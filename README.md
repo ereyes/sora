@@ -1,3 +1,9 @@
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-sa/4.0/)
+[![Status: Prototype](https://img.shields.io/badge/status-prototype-blue.svg?style=for-the-badge)](#)
+[![Format: Single-file HTML](https://img.shields.io/badge/format-single--file%20HTML-orange.svg?style=for-the-badge&logo=html5&logoColor=white)](#)
+[![Project: Sora Deliverables](https://img.shields.io/badge/project-Sora%20Deliverables-7B61FF.svg?style=for-the-badge)](#)
+[![UI: EN / FR](https://img.shields.io/badge/UI-EN%20%2F%20FR-green.svg?style=for-the-badge)](#)
+
 # Sora Deliverables
 
 A compact repository for three Sora-related prototype deliverables:
@@ -46,14 +52,6 @@ No build step is required if each deliverable remains a self-contained, single-f
 
 
 ---
-
-# License & Badges
-
-[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC%20BY--SA%204.0-lightgrey.svg?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-sa/4.0/)
-[![Status: Prototype](https://img.shields.io/badge/status-prototype-blue.svg?style=for-the-badge)](#)
-[![Format: Single-file HTML](https://img.shields.io/badge/format-single--file%20HTML-orange.svg?style=for-the-badge&logo=html5&logoColor=white)](#)
-[![Project: Sora Deliverables](https://img.shields.io/badge/project-Sora%20Deliverables-7B61FF.svg?style=for-the-badge)](#)
-[![UI: EN / FR](https://img.shields.io/badge/UI-EN%20%2F%20FR-green.svg?style=for-the-badge)](#)
 
 ## License
 
